@@ -1,0 +1,166 @@
+name: MacPad
+
+options:
+  bundleIdPrefix: com.doclaudio
+  developmentLanguage: en
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+
+targets:
+  # Scintilla (Cocoa platform layer) + Lexilla lexers, built from the pristine
+  # upstream sources in Vendor/ and exposed to Swift as the `Scintilla` module.
+  Scintilla:
+    type: framework
+    platform: macOS
+    sources:
+      - path: Vendor/scintilla/src
+        headerVisibility: project
+        excludes: ["*.properties"]
+      - path: Vendor/scintilla/include
+        headerVisibility: project
+        excludes: ["*.iface", "Scintilla.h", "Sci_Position.h"]
+      - path: Vendor/scintilla/include/Scintilla.h
+        headerVisibility: public
+      - path: Vendor/scintilla/include/Sci_Position.h
+        headerVisibility: public
+      - path: Vendor/scintilla/cocoa
+        headerVisibility: project
+        excludes: ["res/**", "ScintillaView.h", "InfoBarCommunicator.h"]
+      - path: Vendor/scintilla/cocoa/ScintillaView.h
+        headerVisibility: public
+      - path: Vendor/scintilla/cocoa/InfoBarCommunicator.h
+        headerVisibility: public
+      # Cursor images; COMBINE_HIDPI_IMAGES merges the @2x pairs into the
+      # .tiff files ScintillaView loads at runtime.
+      - path: Vendor/scintilla/cocoa/res
+        buildPhase: resources
+      - path: Vendor/lexilla/lexlib
+        headerVisibility: project
+      - path: Vendor/lexilla/lexers
+      - path: Vendor/lexilla/src
+      - path: Vendor/lexilla/include
+        headerVisibility: project
+        excludes: ["*.iface", "Lexilla.h", "SciLexer.h"]
+      - path: Vendor/lexilla/include/Lexilla.h
+        headerVisibility: public
+      - path: Vendor/lexilla/include/SciLexer.h
+        headerVisibility: public
+      - path: Sources/ScintillaModule
+        buildPhase: none
+    dependencies:
+      - sdk: Cocoa.framework
+      - sdk: QuartzCore.framework
+      - sdk: CoreText.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.doclaudio.MacPad.Scintilla
+        GENERATE_INFOPLIST_FILE: YES
+        DEFINES_MODULE: YES
+        MODULEMAP_FILE: Sources/ScintillaModule/module.modulemap
+        CLANG_CXX_LANGUAGE_STANDARD: c++17
+        CLANG_CXX_LIBRARY: libc++
+        CLANG_ENABLE_OBJC_ARC: YES
+        COMBINE_HIDPI_IMAGES: YES
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        SKIP_INSTALL: YES
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/scintilla/include
+          - $(SRCROOT)/Vendor/scintilla/src
+          - $(SRCROOT)/Vendor/scintilla/cocoa
+          - $(SRCROOT)/Vendor/lexilla/include
+          - $(SRCROOT)/Vendor/lexilla/lexlib
+      configs:
+        Debug:
+          GCC_PREPROCESSOR_DEFINITIONS: ["DEBUG=1"]
+        Release:
+          GCC_PREPROCESSOR_DEFINITIONS: ["NDEBUG=1"]
+
+  MacPad:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/MacPad
+        excludes: ["Resources/FunctionList/**"]
+      # Copied as a folder: several parsers share names with other resources.
+      - path: Sources/MacPad/Resources/FunctionList
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: Scintilla
+        embed: true
+    info:
+      path: Sources/MacPad/Resources/Info.plist
+      properties:
+        CFBundleName: MacPad++
+        CFBundleDisplayName: MacPad++
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        MacPadWebsiteURL: https://macpad-plus-plus.org
+        MacPadRepositoryURL: https://github.com/macpad-plus-plus/macpad-plus-plus
+        LSApplicationCategoryType: public.app-category.developer-tools
+        NSPrincipalClass: NSApplication
+        NSHumanReadableCopyright: "Copyright © 2026 Claudio Azevedo. Licensed under GPL v3."
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Text Document
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Alternate
+            NSDocumentClass: $(PRODUCT_MODULE_NAME).TextDocument
+            LSItemContentTypes:
+              - public.plain-text
+              - public.text
+              - public.source-code
+              - public.data
+    entitlements:
+      path: Sources/MacPad/Resources/MacPad.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+    settings:
+      base:
+        PRODUCT_NAME: MacPad++
+        # Semantic version (MAJOR.MINOR.PATCH), shown in About and Finder.
+        # Bump it on release; see CHANGELOG.md.
+        MARKETING_VERSION: "0.1.0"
+        # Build number, incremented on every distributed build; never shown in About.
+        CURRENT_PROJECT_VERSION: "1"
+        PRODUCT_MODULE_NAME: MacPad
+        PRODUCT_BUNDLE_IDENTIFIER: com.doclaudio.MacPad
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Lets `xcodebuild -exportLocalizations` find String(localized:) and SwiftUI keys.
+        SWIFT_EMIT_LOC_STRINGS: YES
+        LOCALIZATION_PREFERS_STRING_CATALOGS: NO
+        SWIFT_VERSION: "6.0"
+        ENABLE_HARDENED_RUNTIME: YES
+        LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/../Frameworks"]
+
+  MacPadTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/MacPadTests
+    dependencies:
+      - target: MacPad
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.doclaudio.MacPadTests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/MacPad++.app/Contents/MacOS/MacPad++
+        BUNDLE_LOADER: $(TEST_HOST)
+
+schemes:
+  MacPad:
+    build:
+      targets:
+        MacPad: all
+        MacPadTests: [test]
+    test:
+      targets:
+        - MacPadTests

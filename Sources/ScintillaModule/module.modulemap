@@ -1,0 +1,9 @@
+// Swift-facing module for the Scintilla framework.
+// ILexer.h is deliberately left out: Lexilla.h declares ILexer5 as an opaque
+// `void` in C mode, so lexers travel through Swift as raw pointers.
+framework module Scintilla {
+  header "ScintillaView.h"
+  header "Lexilla.h"
+  header "SciLexer.h"
+  export *
+}

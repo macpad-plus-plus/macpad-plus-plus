@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- MacPad++ addition: Notepad++ has no Swift function list. -->
+<NotepadPlus>
+	<functionList>
+		<parser displayName="Swift" id="swift_syntax" commentExpr="(?s:/\*.*?\*/)|(?m-s://.*?$)">
+			<classRange
+				mainExpr="(?m-s)^[\t\x20]*(?:@\w+[\t\x20]+)*(?:(?:public|private|fileprivate|internal|open|final|indirect)[\t\x20]+)*(?:class|struct|enum|extension|protocol|actor)[\t\x20]+[\w.]+[^{\n]*\{"
+				openSymbole="\{"
+				closeSymbole="\}"
+			>
+				<className>
+					<nameExpr expr="(?:class|struct|enum|extension|protocol|actor)[\t\x20]+\K[\w.]+" />
+				</className>
+				<function mainExpr="(?m-s)\b(?:func[\t\x20]+[^\s(&lt;]+|init[?!]?|deinit|subscript)(?=[\t\x20]*[(&lt;{])">
+					<functionName>
+						<funcNameExpr expr="(?&lt;=func[\t\x20])[^\s(&lt;]+|init[?!]?|deinit|subscript" />
+					</functionName>
+				</function>
+			</classRange>
+			<function mainExpr="(?m-s)^[\t\x20]*(?:(?:public|private|fileprivate|internal|static)[\t\x20]+)*func[\t\x20]+[^\s(&lt;]+">
+				<functionName>
+					<nameExpr expr="func[\t\x20]+\K[^\s(&lt;]+" />
+				</functionName>
+			</function>
+		</parser>
+	</functionList>
+</NotepadPlus>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Simplified variant for 16 and 32 px: tab bar + big axolotl head, no code lines -->
+  <defs>
+    <clipPath id="sq"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#FFFFFF"/>
+  <g clip-path="url(#sq)">
+    <rect x="100" y="100" width="824" height="200" fill="#2DA45C"/>
+    <rect x="230" y="190" width="300" height="140" rx="40" fill="#FFFFFF"/>
+    <rect x="100" y="300" width="824" height="40" fill="#FFFFFF"/>
+  </g>
+  <g fill="#1E8E4E">
+    <rect x="180" y="470" width="190" height="64" rx="32" transform="rotate(25 370 502)"/>
+    <rect x="180" y="610" width="190" height="64" rx="32" transform="rotate(-15 370 642)"/>
+    <rect x="654" y="470" width="190" height="64" rx="32" transform="rotate(-25 654 502)"/>
+    <rect x="654" y="610" width="190" height="64" rx="32" transform="rotate(15 654 642)"/>
+  </g>
+  <ellipse cx="512" cy="640" rx="240" ry="190" fill="#7DD89F"/>
+  <circle cx="420" cy="610" r="34" fill="#12301F"/>
+  <circle cx="604" cy="610" r="34" fill="#12301F"/>
+  <path d="M 430 700 Q 512 760 594 700" fill="none" stroke="#13703C" stroke-width="30" stroke-linecap="round"/>
+  <rect x="112" y="112" width="800" height="800" rx="173" fill="none" stroke="#9DB3A6" stroke-width="24"/>
+</svg>

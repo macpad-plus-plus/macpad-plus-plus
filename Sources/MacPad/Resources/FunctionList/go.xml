@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- MacPad++ addition: Notepad++ has no Go function list. -->
+<NotepadPlus>
+	<functionList>
+		<parser displayName="Go" id="go_syntax" commentExpr="(?s:/\*.*?\*/)|(?m-s://.*?$)">
+			<function mainExpr="(?m-s)^func[\t\x20]*(?:\([^)]*\)[\t\x20]*)?\w+">
+				<functionName>
+					<nameExpr expr="\w+$" />
+				</functionName>
+				<className>
+					<nameExpr expr="^func[\t\x20]*\(\s*(?:\w+\s+)?\*?\K\w+" />
+				</className>
+			</function>
+		</parser>
+	</functionList>
+</NotepadPlus>

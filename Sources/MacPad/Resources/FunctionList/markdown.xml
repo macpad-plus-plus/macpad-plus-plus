@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- MacPad++ addition: Markdown headings as the outline. -->
+<NotepadPlus>
+	<functionList>
+		<parser displayName="Markdown" id="markdown_headings" commentExpr="(?m)^```.*?^```">
+			<function mainExpr="(?m-s)^#{1,6}[\t\x20]+.+$">
+				<functionName>
+					<nameExpr expr="(?m-s)^#{1,6}[\t\x20]+\K.+$" />
+				</functionName>
+			</function>
+		</parser>
+	</functionList>
+</NotepadPlus>
