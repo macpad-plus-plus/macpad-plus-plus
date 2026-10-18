@@ -10,6 +10,19 @@ wrapped in a native AppKit app that follows the Mac design language.
 Website: [macpad-plus-plus.org](https://macpad-plus-plus.org) ·
 Downloads: [GitHub Releases](https://github.com/macpad-plus-plus/macpad-plus-plus/releases)
 
+<p align="center">
+  <img src="docs/images/main-window.png" width="800" alt="MacPad++ editing a C file in the dark theme, with several documents open as tabs">
+</p>
+
+## Yes, but why?
+
+When I moved to macOS, most of the apps I used on Windows were available, but I couldn't
+find a simple alternative to Notepad++. Every app I tried was either too complex or too
+simple. And being able to keep countless notes open without ever having to save them,
+the feature I missed the most, was practically nonexistent elsewhere.
+
+So I built it (with Claude's help).
+
 ## Features
 
 - Scintilla editing engine: multiple carets, column selection (⌥-drag), folding, brace matching
@@ -85,12 +98,15 @@ While the version is `0.y.z`, the app is a preview and any release may change be
 1. Set `MARKETING_VERSION` in `project.yml` and move the `[Unreleased]` notes in
    `CHANGELOG.md` under a new `## [X.Y.Z] - date` heading.
 2. Commit, then tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-3. The [Release workflow](.github/workflows/release.yml) builds a universal DMG with
+3. The [Release workflow](.github/workflows/release.yml) builds both DMGs (below) with
    [create-dmg](https://github.com/sindresorhus/create-dmg), swaps in the axolotl background
    from `AppIcon/dmg`, and publishes a GitHub Release
-   with the changelog section as notes, plus a SHA-256 checksum.
+   with the changelog section as notes, plus SHA-256 checksums.
 
-Build the same DMG locally with `scripts/build-dmg.sh` (needs Node 20+); it lands in `dist/`.
+Each release has two DMGs: `apple-silicon` (arm64 only, about a third smaller, for M-series
+Macs) and `universal` (arm64 + x86_64, for Intel Macs or anyone unsure). Build them locally
+with `scripts/build-dmg.sh apple-silicon` and `scripts/build-dmg.sh universal` (needs Node 20+);
+they land in `dist/`.
 
 Without an Apple Developer ID the app is ad-hoc signed, and macOS asks users to approve it
 in System Settings ▸ Privacy & Security on first launch. With a Developer ID, add the
@@ -98,26 +114,27 @@ secrets listed at the top of the release workflow and releases are signed and no
 
 ## Layout
 
-| Path | Contents |
-|---|---|
-| `Sources/MacPad/App` | Entry point, app delegate, main menu, session store, document controller |
-| `Sources/MacPad/Document` | `NSDocument` subclass, encoding and line-ending handling |
-| `Sources/MacPad/Editor` | `ScintillaEditor` (Swift wrapper around `ScintillaView`), search, language catalog, themes |
-| `Sources/MacPad/Window` | Window controller (native tabs), editor view controller, find bar, status bar |
-| `Sources/MacPad/Resources/NotepadPlusPlus` | Language definitions from Notepad++ |
-| `Sources/MacPad/Window/Sidebar` | Sidebar: folder workspace and function list |
-| `Sources/MacPad/Resources/FunctionList` | Function-list parsers from Notepad++ (plus Swift, Go, Markdown) |
-| `Sources/MacPad/Resources/Localization` | Interface translations, one `<language>.lproj/Localizable.strings` per language |
-| `scripts/update-translations.py` | Regenerates the English template and syncs every translation |
-| `Sources/MacPad/Resources/Fonts` | ChicagoFLF (public domain), for the Classic theme |
-| `scripts/build-dmg.sh` | Release build and DMG packaging |
-| `scripts/render-dmg-background.swift` | Draws the DMG window background with the axolotl (`AppIcon/dmg`) |
-| `.github/workflows` | CI (build and test) and Release (DMG on version tags) |
-| `AppIcon` | Icon source art (SVG master, small-size variant, .icns, PNGs, favicon); `AppIcon.appiconset` is copied into `Sources/MacPad/Resources/Assets.xcassets` |
-| `AppIcon/axolote` | The axolotl mascot (with and without "++"), SVG and PNG; the "sem-plus" version appears in the sidebar's empty states |
-| `Tests/MacPadTests` | Unit tests |
-| `Sources/ScintillaModule` | Module map that exposes Scintilla and Lexilla to Swift |
-| `Vendor/scintilla`, `Vendor/lexilla` | Unmodified upstream sources (Scintilla 5.6.6, Lexilla 5.5.3) |
+| Path                                       | Contents                                                                                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Sources/MacPad/App`                       | Entry point, app delegate, main menu, session store, document controller                                                                               |
+| `Sources/MacPad/Document`                  | `NSDocument` subclass, encoding and line-ending handling                                                                                               |
+| `Sources/MacPad/Editor`                    | `ScintillaEditor` (Swift wrapper around `ScintillaView`), search, language catalog, themes                                                             |
+| `Sources/MacPad/Window`                    | Window controller (native tabs), editor view controller, find bar, status bar                                                                          |
+| `Sources/MacPad/Resources/NotepadPlusPlus` | Language definitions from Notepad++                                                                                                                    |
+| `Sources/MacPad/Window/Sidebar`            | Sidebar: folder workspace and function list                                                                                                            |
+| `Sources/MacPad/Resources/FunctionList`    | Function-list parsers from Notepad++ (plus Swift, Go, Markdown)                                                                                        |
+| `Sources/MacPad/Resources/Localization`    | Interface translations, one `<language>.lproj/Localizable.strings` per language                                                                        |
+| `scripts/update-translations.py`           | Regenerates the English template and syncs every translation                                                                                           |
+| `Sources/MacPad/Resources/Fonts`           | ChicagoFLF (public domain), for the Classic theme                                                                                                      |
+| `scripts/build-dmg.sh`                     | Release build and DMG packaging                                                                                                                        |
+| `scripts/render-dmg-background.swift`      | Draws the DMG window background with the axolotl (`AppIcon/dmg`)                                                                                       |
+| `.github/workflows`                        | CI (build and test) and Release (DMG on version tags)                                                                                                  |
+| `AppIcon`                                  | Icon source art (SVG master, small-size variant, .icns, PNGs, favicon); `AppIcon.appiconset` is copied into `Sources/MacPad/Resources/Assets.xcassets` |
+| `AppIcon/axolote`                          | The axolotl mascot (with and without "++"), SVG and PNG; the "sem-plus" version appears in the sidebar's empty states                                  |
+| `docs/images`                              | Screenshots used in this README |
+| `Tests/MacPadTests`                        | Unit tests                                                                                                                                             |
+| `Sources/ScintillaModule`                  | Module map that exposes Scintilla and Lexilla to Swift                                                                                                 |
+| `Vendor/scintilla`, `Vendor/lexilla`       | Upstream sources (Scintilla 5.6.6, Lexilla 5.5.3) with the patches in `Vendor/PATCHES.md` |
 
 ## License
 
