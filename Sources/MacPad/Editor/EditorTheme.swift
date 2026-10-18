@@ -128,12 +128,16 @@ struct EditorTheme: Sendable {
         caretWidth: 1,
         preferredFont: "Monaco")
 
-    static func current(for appearance: NSAppearance) -> EditorTheme {
-        switch Preferences.theme {
+    static func palette(for theme: Preferences.Theme, dark: Bool) -> EditorTheme {
+        switch theme {
         case .classic: .classic
         case .light: .light
         case .dark: .dark
-        case .system: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .dark : .light
+        case .system: dark ? .dark : .light
         }
+    }
+
+    static func current(for appearance: NSAppearance) -> EditorTheme {
+        palette(for: Preferences.theme, dark: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
     }
 }

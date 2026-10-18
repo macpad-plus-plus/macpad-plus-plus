@@ -10,6 +10,7 @@
  See TRANSLATING.md. This file is kept in sync by scripts/update-translations.py.
 */
 
+"%@ of %@" = "%@ of %@";
 "%@ Website" = "Site do %@";
 "%@ — line %lld" = "%@ — linha %lld";
 "%lld pt" = "%lld pt";
@@ -30,6 +31,7 @@
 "Classic recreates the Mac OS 9 Platinum look: Monaco, lavender highlight, platinum bars and the Chicago font." = "O Clássico recria o visual Platinum do Mac OS 9: Monaco, seleção lavanda, barras platinadas e a fonte Chicago.";
 "Clear Menu" = "Limpar Menu";
 "Close" = "Fechar";
+"Close Without Saving" = "Fechar sem Salvar";
 "Copy" = "Copiar";
 "Copy Path" = "Copiar Caminho";
 "Cut" = "Recortar";
@@ -64,6 +66,7 @@
 "Go to Line" = "Ir para a Linha";
 "Go to Line…" = "Ir para a Linha…";
 "Help" = "Ajuda";
+"Help translate MacPad++ into your language on GitHub" = "Ajude a traduzir o MacPad++ para o seu idioma no GitHub";
 "Hide %@" = "Ocultar %@";
 "Hide Find Bar" = "Ocultar Barra de Busca";
 "Hide Others" = "Ocultar Outros";
@@ -73,6 +76,8 @@
 "Insert spaces instead of tabs" = "Inserir espaços em vez de tabulações";
 "Interface Language" = "Idioma da Interface";
 "Invalid pattern" = "Padrão inválido";
+"It was deleted or moved by another app. Save it again to keep it, or close it." = "Ele foi apagado ou movido por outro app. Salve-o novamente para mantê-lo, ou feche-o.";
+"Keep This Version" = "Manter Esta Versão";
 "Language" = "Linguagem";
 "Later" = "Depois";
 "Length: %@  ·  Lines: %@" = "Tamanho: %@  ·  Linhas: %@";
@@ -84,9 +89,9 @@
 "MacPad++ axolotl" = "Axolote do MacPad++";
 "Match Case" = "Diferenciar Maiúsculas";
 "Match System" = "Igual ao Sistema";
+"Matches: %@" = "Matches: %@";
 "Merge All Windows" = "Juntar Todas as Janelas";
 "Minimize" = "Minimizar";
-"Missing a language? Translations are simple text files that anyone can add. See TRANSLATING.md in the project repository." = "Falta um idioma? As traduções são arquivos de texto simples que qualquer pessoa pode adicionar. Veja o TRANSLATING.md no repositório do projeto.";
 "Move Tab to New Window" = "Mover Aba para Nova Janela";
 "New" = "Novo";
 "New Documents" = "Novos Documentos";
@@ -107,13 +112,15 @@
 "Preview" = "Pré-visualização";
 "Previous" = "Anterior";
 "Quit %@" = "Encerrar %@";
-"Quitting never asks to save: open tabs, unsaved edits and untitled documents come back at the next launch, like Notepad++'s session snapshot. Unsaved changes are backed up every %lld seconds." = "Ao encerrar, nada é perguntado: abas abertas, alterações não salvas e documentos sem título voltam na próxima abertura, como no snapshot de sessão do Notepad++. As alterações não salvas têm backup a cada %lld segundos.";
 "Redo" = "Refazer";
 "Refresh" = "Atualizar";
 "Regular Expression (\\1 or $1 in replacement)" = "Expressão Regular (\\1 ou $1 na substituição)";
 "Relaunch MacPad++ to change the language?" = "Reabrir o MacPad++ para trocar o idioma?";
 "Relaunch Now" = "Reabrir Agora";
 "Release Notes" = "Notas da Versão";
+"Reload" = "Recarregar";
+"Reload it from disk to see the changes?" = "Recarregar do disco para ver as alterações?";
+"Reload it from disk? Your unsaved changes in MacPad++ will be lost." = "Recarregar do disco? Suas alterações não salvas no MacPad++ serão perdidas.";
 "Remember open documents and unsaved changes" = "Lembrar documentos abertos e alterações não salvas";
 "Remove Folder from Workspace" = "Remover Pasta do Espaço de Trabalho";
 "Replace" = "Substituir";
@@ -156,6 +163,7 @@
 "Theme" = "Tema";
 "Undo" = "Desfazer";
 "Unix (LF)" = "Unix (LF)";
+"Unsaved changes are backed up every %lld seconds." = "As alterações não salvas têm backup a cada %lld segundos.";
 "Use Selection for Find" = "Usar Seleção para Buscar";
 "Version %@" = "Versão %@";
 "View" = "Visualizar";
@@ -169,3 +177,5 @@
 "Zoom" = "Zoom";
 "Zoom In" = "Ampliar";
 "Zoom Out" = "Reduzir";
+"“%@” no longer exists on disk." = "“%@” não existe mais no disco.";
+"“%@” was changed by another app." = "“%@” foi alterado por outro app.";

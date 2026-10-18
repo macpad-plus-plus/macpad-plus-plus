@@ -35,6 +35,8 @@ final class SettingsWindowController: NSWindowController {
 
     private static func tab(_ title: String, symbol: String, _ view: some View) -> NSTabViewItem {
         let host = NSHostingController(rootView: AnyView(view.frame(width: 480).fixedSize()))
+        // The window shows the selected tab's title, as in other macOS settings windows.
+        host.title = title
         // The tab controller sizes the window itself (see SettingsTabViewController);
         // letting SwiftUI publish a preferred size would add a second, later resize.
         host.sizingOptions = []
@@ -95,15 +97,14 @@ private struct GeneralSettings: View {
             } header: {
                 Text("Interface Language")
             } footer: {
-                Text("Missing a language? Translations are simple text files that anyone can add. See TRANSLATING.md in the project repository.")
+                Link("Help translate MacPad++ into your language on GitHub", destination: AboutPanel.translatingURL)
             }
             Section {
                 Toggle("Remember open documents and unsaved changes", isOn: $restoreSession)
-                Text("Quitting never asks to save: open tabs, unsaved edits and untitled documents come back at the next launch, like Notepad++'s session snapshot. Unsaved changes are backed up every \(Int(SessionStore.backupInterval)) seconds.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
             } header: {
                 Text("Session")
+            } footer: {
+                Text("Unsaved changes are backed up every \(Int(SessionStore.backupInterval)) seconds.")
             }
             Section {
                 Toggle("Show hidden files", isOn: $showHiddenFiles)
@@ -151,10 +152,6 @@ private struct EditorSettingsView: View {
                 Stepper(value: $fontSize, in: 8...36, step: 1) {
                     LabeledContent("Size", value: String(localized: "\(Int(fontSize)) pt"))
                 }
-                Text(verbatim: "func greet() { return \"0O 1lI {}[]\" }")
-                    .font(.custom(fontName.isEmpty ? "SF Mono" : fontName, size: min(fontSize, 18)))
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
             } header: {
                 Text("Font")
             } footer: {
@@ -183,6 +180,8 @@ private struct EditorSettingsView: View {
 
 private struct AppearanceSettings: View {
     @AppStorage(Preferences.Key.theme) private var theme = Preferences.Theme.system.rawValue
+    @AppStorage(Preferences.Key.fontName) private var fontName = ""
+    @AppStorage(Preferences.Key.fontSize) private var fontSize = 13.0
 
     var body: some View {
         Form {
@@ -197,30 +196,23 @@ private struct AppearanceSettings: View {
                 Text("Classic recreates the Mac OS 9 Platinum look: Monaco, lavender highlight, platinum bars and the Chicago font.")
             }
             Section("Preview") {
-                ThemePreview(theme: Preferences.Theme(rawValue: theme) ?? .system)
+                ThemePreview(theme: Preferences.Theme(rawValue: theme) ?? .system, fontName: fontName, fontSize: fontSize)
             }
         }
         .formStyle(.grouped)
     }
 }
 
-/// A few lines of Swift rendered with the selected theme's colours.
+/// A few lines of Swift rendered with the selected theme's colours and the editor font.
 private struct ThemePreview: View {
     let theme: Preferences.Theme
+    let fontName: String
+    let fontSize: Double
     @Environment(\.colorScheme) private var colorScheme
 
-    private var palette: EditorTheme {
-        switch theme {
-        case .classic: .classic
-        case .light: .light
-        case .dark: .dark
-        case .system: colorScheme == .dark ? .dark : .light
-        }
-    }
-
     var body: some View {
-        let p = palette
-        let font = Font.custom(p.preferredFont ?? "SF Mono", size: 12)
+        let p = EditorTheme.palette(for: theme, dark: colorScheme == .dark)
+        let font = Font.custom(fontName.isEmpty ? (p.preferredFont ?? "SF Mono") : fontName, size: min(fontSize, 18))
         VStack(alignment: .leading, spacing: 2) {
             (color(p, .comment, "// Greets the world\n")
                 + color(p, .keyword, "func ") + text(p, "greet(")

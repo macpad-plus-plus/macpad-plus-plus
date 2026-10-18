@@ -10,6 +10,7 @@ enum AboutPanel {
     static let repositoryURL = infoURL("MacPadRepositoryURL", fallback: "https://github.com/macpad-plus-plus/macpad-plus-plus")
     static var issuesURL: URL { repositoryURL.appending(path: "issues/new") }
     static var releasesURL: URL { repositoryURL.appending(path: "releases") }
+    static var translatingURL: URL { repositoryURL.appending(path: "blob/main/TRANSLATING.md") }
 
     private static func infoURL(_ key: String, fallback: String) -> URL {
         URL(string: Bundle.main.object(forInfoDictionaryKey: key) as? String ?? fallback)!
