@@ -7,6 +7,29 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-18
+
+### Added
+
+- When a file open in MacPad++ is changed by another app, returning to it offers to
+  reload it, keep the current version or close it. When the file was deleted (or moved
+  to the Trash), it offers Save, Save As or Close Without Saving.
+- Two downloads per release: a smaller Apple silicon DMG (arm64 only) and a universal
+  DMG that also runs on Intel Macs.
+
+### Fixed
+
+- The end of long lines and the last line no longer hide under the scroll bars when
+  scrolling all the way with the trackpad or mouse.
+- The Settings window is titled after the selected tab instead of "Untitled".
+- The find bar's match count is translated.
+
+### Changed
+
+- The font sample moved from Settings ▸ Editor to the Appearance preview, which now
+  uses the chosen font and size.
+- Shorter explanations in Settings ▸ General, with a link for helping translate the app.
+
 ## [0.1.0] - 2026-10-18
 
 First release: a preview of Notepad++'s editing experience as a native Mac app.
@@ -30,5 +53,6 @@ First release: a preview of Notepad++'s editing experience as a native Mac app.
 - Links to [macpad-plus-plus.org](https://macpad-plus-plus.org) and the GitHub
   repository in the About window and the Help menu.
 
-[Unreleased]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/macpad-plus-plus/macpad-plus-plus/releases/tag/v0.1.0
