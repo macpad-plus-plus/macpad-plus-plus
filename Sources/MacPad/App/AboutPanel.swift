@@ -31,9 +31,15 @@ enum AboutPanel {
     static func show() {
         if window == nil {
             let host = NSHostingController(rootView: AboutView())
-            host.sizingOptions = .preferredContentSize
+            // The view has a fixed size, so size the window once. Letting SwiftUI
+            // size it through constraints loops: under the transparent title bar
+            // the safe area changes with the window frame, which asks for another
+            // constraints pass on every resize until AppKit raises an exception.
+            host.sizingOptions = []
+            let size = host.sizeThatFits(in: NSSize(width: 10_000, height: 10_000))
             let window = NSWindow(contentViewController: host)
             window.styleMask = [.titled, .closable, .fullSizeContentView]
+            window.setContentSize(size)
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.isMovableByWindowBackground = true
@@ -98,5 +104,7 @@ private struct AboutView: View {
         .padding(.horizontal, 32)
         .frame(width: 380)
         .fixedSize()
+        // Laid out under the transparent title bar, independent of its height.
+        .ignoresSafeArea()
     }
 }
