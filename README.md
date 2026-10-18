@@ -40,8 +40,9 @@ So I built it (with Claude's help).
   session, hidden files, defaults for new documents
 - Interface in English and Brazilian Portuguese, following the macOS language or chosen in
   Settings; more languages are simple text files anyone can add ([TRANSLATING.md](TRANSLATING.md))
-- Themes: Match System, Light, Dark and Classic (Mac OS 9 Platinum: Monaco, lavender highlight,
-  platinum bars, Chicago font)
+- Themes: Match System, Light, Dark and Classic (Mac OS 9 Platinum: pinstriped title bar with
+  close, zoom and collapse boxes, Platinum tabs and scroll bars, Monaco, lavender highlight,
+  Chicago font)
 - Session snapshot: quitting never prompts; open tabs, unsaved changes and untitled
   documents come back on the next launch (backed up every 7 seconds)
 

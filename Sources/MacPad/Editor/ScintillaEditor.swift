@@ -39,7 +39,7 @@ final class ScintillaEditor: ScintillaView {
             self, selector: #selector(preferencesDidChange),
             name: Preferences.didChange, object: nil)
         NotificationCenter.default.addObserver(
-            self, selector: #selector(updateScrollerMargin),
+            self, selector: #selector(applyScrollers),
             name: NSScroller.preferredScrollerStyleDidChangeNotification, object: nil)
     }
 
@@ -141,7 +141,19 @@ final class ScintillaEditor: ScintillaView {
         send(SCI_SETTABWIDTH, settings.tabWidth)
         send(SCI_SETUSETABS, settings.insertSpaces ? 0 : 1)
         send(SCI_SETINDENTATIONGUIDES, Int(settings.showIndentGuides ? SC_IV_LOOKBOTH : SC_IV_NONE))
+        applyScrollers()
         applyTheme()
+    }
+
+    /// Platinum scrollers for the Classic theme; the system's otherwise.
+    @objc private func applyScrollers() {
+        let classic = Chrome.isClassic
+        if (scrollView.verticalScroller is ClassicScroller) != classic {
+            scrollView.verticalScroller = classic ? ClassicScroller() : NSScroller()
+            scrollView.horizontalScroller = classic ? ClassicScroller() : NSScroller()
+        }
+        scrollView.scrollerStyle = classic ? .legacy : NSScroller.preferredScrollerStyle
+        updateScrollerMargin()
     }
 
     @objc private func preferencesDidChange() {

@@ -1,49 +1,59 @@
 import AppKit
 
-/// The window sidebar: Folder Workspace and Function List, switched with a
-/// segmented control as in Xcode's navigator.
+/// The window sidebar: Folder Workspace and Function List. The switcher between
+/// them lives in the window's top row, as close to the top as possible: a
+/// toolbar item (see `SidebarSwitcher`), or the Classic theme's tab strip.
 final class SidebarViewController: NSViewController {
     enum Tab: Int {
         case files, symbols
+
+        var symbolName: String {
+            switch self {
+            case .files: "folder"
+            case .symbols: "list.bullet.indent"
+            }
+        }
+
+        var title: String {
+            switch self {
+            case .files: String(localized: "Folder Workspace")
+            case .symbols: String(localized: "Function List")
+            }
+        }
+
+        var toolTip: String {
+            switch self {
+            case .files: String(localized: "Folder Workspace (⌃⌘1)")
+            case .symbols: String(localized: "Function List (⌃⌘2)")
+            }
+        }
     }
 
     static let tabKey = "sidebarTab"
+    /// Wide enough for the traffic lights, the sidebar button and the switcher
+    /// sharing the toolbar row above the sidebar.
+    static let minimumWidth: CGFloat = 220
     static let tabDidChange = Notification.Name("MacPadSidebarTabDidChange")
 
     let files = FileTreeViewController()
     let symbols = FunctionListViewController()
-    private let switcher = NSSegmentedControl()
     private let content = NSView()
     private let classicBackground = NSView()
+    /// The lists' own source-list background, restored when leaving Classic.
+    private var listBackground: NSColor?
+    /// Distance from the top of the sidebar to its content; see `updateContentTop()`.
+    private var contentTop: NSLayoutConstraint!
 
-    var tab: Tab {
-        get { Tab(rawValue: switcher.selectedSegment) ?? .files }
-        set {
-            switcher.selectedSegment = newValue.rawValue
-            show(newValue)
-        }
+    private(set) var tab: Tab = .files {
+        didSet { show(tab) }
     }
 
     override func loadView() {
-        switcher.segmentCount = 2
-        switcher.trackingMode = .selectOne
-        switcher.segmentStyle = .automatic
-        switcher.setImage(NSImage(systemSymbolName: "folder", accessibilityDescription: String(localized: "Folder Workspace")), forSegment: 0)
-        switcher.setImage(NSImage(systemSymbolName: "list.bullet.indent", accessibilityDescription: String(localized: "Function List")), forSegment: 1)
-        switcher.setToolTip(String(localized: "Folder Workspace (⌃⌘1)"), forSegment: 0)
-        switcher.setToolTip(String(localized: "Function List (⌃⌘2)"), forSegment: 1)
-        switcher.target = self
-        switcher.action = #selector(switcherChanged(_:))
-
-        let header = NSStackView(views: [switcher])
-        header.edgeInsets = NSEdgeInsets(top: 4, left: 8, bottom: 6, right: 8)
-        header.alignment = .centerX
-
         classicBackground.wantsLayer = true
         classicBackground.layer?.backgroundColor = Chrome.Platinum.panel.cgColor
 
         let container = NSView()
-        for view in [classicBackground, header, content] {
+        for view in [classicBackground, content] {
             view.translatesAutoresizingMaskIntoConstraints = false
             container.addSubview(view)
         }
@@ -52,15 +62,13 @@ final class SidebarViewController: NSViewController {
             classicBackground.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             classicBackground.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             classicBackground.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            header.topAnchor.constraint(equalTo: container.safeAreaLayoutGuide.topAnchor),
-            header.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            header.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            content.topAnchor.constraint(equalTo: header.bottomAnchor),
             content.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             content.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             content.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            container.widthAnchor.constraint(greaterThanOrEqualToConstant: 180),
+            container.widthAnchor.constraint(greaterThanOrEqualToConstant: Self.minimumWidth),
         ])
+        contentTop = content.topAnchor.constraint(equalTo: container.topAnchor)
+        contentTop.isActive = true
         view = container
 
         addChild(files)
@@ -73,8 +81,48 @@ final class SidebarViewController: NSViewController {
         applyChrome()
     }
 
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        updateContentTop()
+    }
+
+    /// The safe area also covers the tab bar's height, though the tab bar only
+    /// spans the editor; start right below the toolbar instead.
+    private func updateContentTop() {
+        let safeTop = view.safeAreaInsets.top
+        var top = safeTop
+        if !Chrome.isClassic, let frameView = view.window?.contentView?.superview,
+           let toolbarView = Self.descendant(of: frameView, named: "NSToolbarView"), !toolbarView.isHidden {
+            let toolbarBottom = view.bounds.maxY - toolbarView.convert(toolbarView.bounds, to: view).minY
+            top = min(safeTop, max(0, toolbarBottom))
+        }
+        if contentTop.constant != top {
+            contentTop.constant = top
+        }
+    }
+
+    private static func descendant(of view: NSView, named className: String) -> NSView? {
+        var stack = [view]
+        while let current = stack.popLast() {
+            if String(describing: type(of: current)) == className { return current }
+            stack += current.subviews
+        }
+        return nil
+    }
+
     @objc private func applyChrome() {
-        classicBackground.isHidden = !Chrome.isClassic
+        view.needsLayout = true
+        let classic = Chrome.isClassic
+        classicBackground.isHidden = !classic
+        // Source lists paint their own grey, which would hide the Platinum panel.
+        for list in [files.view, symbols.view].flatMap(Self.outlineViews(in:)) {
+            if listBackground == nil { listBackground = list.backgroundColor }
+            list.backgroundColor = classic ? .clear : (listBackground ?? list.backgroundColor)
+        }
+    }
+
+    private static func outlineViews(in view: NSView) -> [NSOutlineView] {
+        (view as? NSOutlineView).map { [$0] } ?? view.subviews.flatMap(outlineViews(in:))
     }
 
     private func show(_ tab: Tab) {
@@ -98,13 +146,55 @@ final class SidebarViewController: NSViewController {
         NotificationCenter.default.post(name: Self.tabDidChange, object: self)
     }
 
-    @objc private func switcherChanged(_ sender: NSSegmentedControl) {
-        select(tab)
-    }
-
     @objc private func tabDidChangeElsewhere(_ notification: Notification) {
         guard notification.object as? SidebarViewController !== self else { return }
         tab = Tab(rawValue: UserDefaults.standard.integer(forKey: Self.tabKey)) ?? .files
+    }
+}
+
+/// Toolbar control switching the sidebar between its tabs. It sits over the
+/// sidebar, next to the sidebar button, and hides with the sidebar.
+final class SidebarSwitcher: NSSegmentedControl {
+    static let itemIdentifier = NSToolbarItem.Identifier("SidebarSwitcher")
+
+    private let tabs: [SidebarViewController.Tab] = [.files, .symbols]
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        segmentCount = tabs.count
+        trackingMode = .selectOne
+        segmentStyle = .automatic
+        for (index, tab) in tabs.enumerated() {
+            setImage(NSImage(systemSymbolName: tab.symbolName, accessibilityDescription: tab.title), forSegment: index)
+            setToolTip(tab.toolTip, forSegment: index)
+        }
+        target = self
+        action = #selector(segmentChanged)
+        NotificationCenter.default.addObserver(self, selector: #selector(sync), name: SidebarViewController.tabDidChange, object: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    private var sidebar: SidebarViewController? {
+        (window?.contentViewController as? DocumentSplitViewController)?.sidebar
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        sync()
+    }
+
+    @objc private func sync() {
+        let tab = sidebar?.tab ?? SidebarViewController.Tab(rawValue: UserDefaults.standard.integer(forKey: SidebarViewController.tabKey)) ?? .files
+        selectedSegment = tabs.firstIndex(of: tab) ?? 0
+    }
+
+    @objc private func segmentChanged() {
+        guard tabs.indices.contains(selectedSegment) else { return }
+        sidebar?.select(tabs[selectedSegment])
     }
 }
 
@@ -130,11 +220,7 @@ final class DocumentSplitViewController: NSSplitViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        sidebarItem = NSSplitViewItem(sidebarWithViewController: sidebar)
-        sidebarItem.minimumThickness = 180
-        sidebarItem.maximumThickness = 420
-        sidebarItem.canCollapse = true
-        sidebarItem.isCollapsed = UserDefaults.standard.object(forKey: Self.collapsedKey) as? Bool ?? true
+        sidebarItem = makeSidebarItem()
         let editorItem = NSSplitViewItem(viewController: editorController)
         editorItem.minimumThickness = 320
         addSplitViewItem(sidebarItem)
@@ -143,12 +229,54 @@ final class DocumentSplitViewController: NSSplitViewController {
         sidebar.symbols.editor = editorController.editor
 
         NotificationCenter.default.addObserver(self, selector: #selector(collapsedDidChangeElsewhere(_:)), name: Self.collapsedDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(applyChrome), name: Preferences.didChange, object: nil)
+    }
+
+    /// The system sidebar floats on glass; the Classic theme wants a plain
+    /// Platinum pane, so it uses an ordinary split item instead.
+    private func makeSidebarItem() -> NSSplitViewItem {
+        let item = Chrome.isClassic ? NSSplitViewItem(viewController: sidebar) : NSSplitViewItem(sidebarWithViewController: sidebar)
+        item.minimumThickness = SidebarViewController.minimumWidth
+        item.maximumThickness = 420
+        item.canCollapse = true
+        item.holdingPriority = .defaultLow + 10
+        item.isCollapsed = UserDefaults.standard.object(forKey: Self.collapsedKey) as? Bool ?? true
+        return item
+    }
+
+    /// When the sidebar last started to show or hide.
+    private var lastToggle = Date.distantPast
+
+    @objc private func applyChrome() {
+        let wantsSidebarBehavior = !Chrome.isClassic
+        guard (sidebarItem.behavior == .sidebar) != wantsSidebarBehavior else { return }
+        // Removing an item mid-animation makes AppKit throw when it finishes.
+        let wait = 0.6 - Date().timeIntervalSince(lastToggle)
+        if wait > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in self?.applyChrome() }
+            return
+        }
+        removeSplitViewItem(sidebarItem)
+        sidebarItem = makeSidebarItem()
+        insertSplitViewItem(sidebarItem, at: 0)
+    }
+
+    /// View ▸ Show/Hide Sidebar. Not `toggleSidebar(_:)`: AppKit only routes that
+    /// to a split view controller with a system sidebar item, which the
+    /// Classic theme replaces with a plain pane.
+    @objc func toggleSidebarPane(_ sender: Any?) {
+        toggleSidebar(sender)
     }
 
     override func toggleSidebar(_ sender: Any?) {
-        super.toggleSidebar(sender)
         // isCollapsed flips at the end of the animation; record the target state now.
         let collapsed = !sidebarItem.isCollapsed
+        lastToggle = Date()
+        if sidebarItem.behavior == .sidebar {
+            super.toggleSidebar(sender)
+        } else {
+            sidebarItem.animator().isCollapsed = collapsed
+        }
         UserDefaults.standard.set(collapsed, forKey: Self.collapsedKey)
         NotificationCenter.default.post(name: Self.collapsedDidChange, object: self)
     }
@@ -180,8 +308,9 @@ final class DocumentSplitViewController: NSSplitViewController {
     }
 
     override func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
-        if item.action == #selector(toggleSidebar(_:)), let menuItem = item as? NSMenuItem {
-            menuItem.title = sidebarItem.isCollapsed ? String(localized: "Show Sidebar") : String(localized: "Hide Sidebar")
+        if item.action == #selector(toggleSidebarPane(_:)) {
+            (item as? NSMenuItem)?.title = sidebarItem.isCollapsed ? String(localized: "Show Sidebar") : String(localized: "Hide Sidebar")
+            return true
         }
         return super.validateUserInterfaceItem(item)
     }

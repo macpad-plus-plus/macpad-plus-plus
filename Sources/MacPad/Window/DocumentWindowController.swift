@@ -28,6 +28,14 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
         toolbar.allowsUserCustomization = false
         window.toolbar = toolbar
         window.toolbarStyle = .unified
+        self.toolbar = toolbar
+        applyChrome()
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(applyChrome),
+            name: Preferences.didChange, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(updateSwitcherVisibility),
+            name: DocumentSplitViewController.collapsedDidChange, object: nil)
 
         // Returning to the app, or switching to this tab, checks whether another
         // app changed or deleted the file.
@@ -37,6 +45,19 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
         NotificationCenter.default.addObserver(
             self, selector: #selector(checkForExternalChanges),
             name: NSApplication.didBecomeActiveNotification, object: nil)
+    }
+
+    /// Kept while the Classic theme replaces the title bar, so it can come back.
+    private var toolbar: NSToolbar?
+
+    private var appliedClassic: Bool?
+
+    /// Only on theme changes: toggling the tab bar writes a default, which
+    /// would otherwise call back in here.
+    @objc private func applyChrome() {
+        guard let window, appliedClassic != Chrome.isClassic else { return }
+        appliedClassic = Chrome.isClassic
+        ClassicWindowFrame.apply(to: window, toolbar: toolbar)
     }
 
     @objc private func checkForExternalChanges() {
@@ -64,7 +85,7 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
     // MARK: Toolbar
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace]
+        [.toggleSidebar, .flexibleSpace, SidebarSwitcher.itemIdentifier, .sidebarTrackingSeparator, .flexibleSpace]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -72,6 +93,21 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
     }
 
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        nil
+        guard itemIdentifier == SidebarSwitcher.itemIdentifier else { return nil }
+        let item = NSToolbarItem(itemIdentifier: itemIdentifier)
+        item.view = SidebarSwitcher()
+        item.label = String(localized: "Sidebar")
+        item.isBordered = false
+        switcherItem = item
+        updateSwitcherVisibility()
+        return item
+    }
+
+    private weak var switcherItem: NSToolbarItem?
+
+    /// The switcher belongs to the sidebar; hide it while the sidebar is.
+    @objc private func updateSwitcherVisibility() {
+        guard #available(macOS 15.0, *), let item = switcherItem else { return }
+        item.isHidden = UserDefaults.standard.object(forKey: DocumentSplitViewController.collapsedKey) as? Bool ?? true
     }
 }

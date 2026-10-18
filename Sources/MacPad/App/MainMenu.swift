@@ -85,7 +85,7 @@ enum MainMenu {
 
     private static func viewMenu() -> NSMenu {
         let menu = NSMenu(title: String(localized: "View"))
-        menu.addItem(withTitle: String(localized: "Show Sidebar"), action: #selector(NSSplitViewController.toggleSidebar(_:)), keyEquivalent: "s")
+        menu.addItem(withTitle: String(localized: "Show Sidebar"), action: #selector(DocumentSplitViewController.toggleSidebarPane(_:)), keyEquivalent: "s")
             .keyEquivalentModifierMask = [.command, .control]
         menu.addItem(withTitle: String(localized: "Folder Workspace"), action: #selector(DocumentSplitViewController.showFolderWorkspace(_:)), keyEquivalent: "1")
             .keyEquivalentModifierMask = [.command, .control]

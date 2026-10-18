@@ -34,11 +34,13 @@ enum Preferences {
         }
 
         /// The appearance forced on the whole app; nil follows the system.
+        /// Classic dresses dialogs and menus in dark, which sits better next to
+        /// Platinum grey; document windows keep a light content view.
         var appearance: NSAppearance? {
             switch self {
             case .system: nil
-            case .light, .classic: NSAppearance(named: .aqua)
-            case .dark: NSAppearance(named: .darkAqua)
+            case .light: NSAppearance(named: .aqua)
+            case .dark, .classic: NSAppearance(named: .darkAqua)
             }
         }
     }
@@ -137,6 +139,16 @@ enum Chrome {
         static let shadow = NSColor(srgbRed: 0x99 / 255, green: 0x99 / 255, blue: 0x99 / 255, alpha: 1)
         static let highlight = NSColor(srgbRed: 0xCC / 255, green: 0xCC / 255, blue: 0xFF / 255, alpha: 1)
         static let accent = NSColor(srgbRed: 0x33 / 255, green: 0x33 / 255, blue: 0x99 / 255, alpha: 1)
+        /// Window frame and title bar.
+        static let frame = NSColor(srgbRed: 0xCC / 255, green: 0xCC / 255, blue: 0xCC / 255, alpha: 1)
+        static let dark = NSColor(srgbRed: 0x55 / 255, green: 0x55 / 255, blue: 0x55 / 255, alpha: 1)
+        static let pressed = NSColor(srgbRed: 0x88 / 255, green: 0x88 / 255, blue: 0x88 / 255, alpha: 1)
+        static let boxShade = NSColor(srgbRed: 0xAA / 255, green: 0xAA / 255, blue: 0xAA / 255, alpha: 1)
+        static let stripe = NSColor(srgbRed: 0x77 / 255, green: 0x77 / 255, blue: 0x77 / 255, alpha: 1)
+        static let inactiveText = NSColor(srgbRed: 0x77 / 255, green: 0x77 / 255, blue: 0x77 / 255, alpha: 1)
+        /// Scroll thumb, tinted with the highlight colour as in Mac OS 9.
+        static let thumb = NSColor(srgbRed: 0xCC / 255, green: 0xCC / 255, blue: 0xFF / 255, alpha: 1)
+        static let thumbShadow = NSColor(srgbRed: 0x66 / 255, green: 0x66 / 255, blue: 0x99 / 255, alpha: 1)
     }
 
     static let classicFontName = "ChicagoFLF"
