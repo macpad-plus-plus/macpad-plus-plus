@@ -1,3 +1,42 @@
+COPYING -- Describes the terms under which MacPad++ is distributed.
+A copy of the GNU GPL is appended to this file.
+
+MACPAD++ LICENSE TERMS
+
+Copyright (C) 2026 Claudio Azevedo. This program is free software; you may
+redistribute and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; Version 3. This guarantees your
+right to use, modify, and redistribute this software under certain conditions.
+
+MacPad++ is a macOS adaptation of Notepad++ and includes material derived from
+it, notably the language definitions in
+Sources/MacPad/Resources/NotepadPlusPlus/ (langs.model.xml, stylers.model.xml),
+the function-list parsers in Sources/MacPad/Resources/FunctionList/, and the
+function-list algorithm in Sources/MacPad/Editor/FunctionList.swift:
+
+    Notepad++ - Copyright (C) 2021 Don HO <don.h@free.fr>
+    Licensed under the GNU General Public License, Version 3.
+    https://notepad-plus-plus.org
+
+"Notepad++" is the name of Don HO's project. MacPad++ is an independent project
+and is not affiliated with or endorsed by it.
+
+Scintilla and Lexilla (Vendor/scintilla, Vendor/lexilla) are Copyright (C)
+1998-2021 Neil Hodgson and are distributed under their own permissive license,
+reproduced in Vendor/scintilla/License.txt and Vendor/lexilla/License.txt.
+
+The ChicagoFLF font (Sources/MacPad/Resources/Fonts/), used by the Classic
+theme, was placed in the public domain by its designer, Robin Casady; see
+ChicagoFLF-LICENSE.txt. The Classic theme's colours follow the Mac OS 9
+Platinum appearance; MacPad++ is not affiliated with Apple.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+******************************************************************
+
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
