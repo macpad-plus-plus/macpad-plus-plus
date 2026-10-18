@@ -81,9 +81,21 @@ final class SidebarViewController: NSViewController {
         applyChrome()
     }
 
+    private var contentTopUpdatePending = false
+
     override func viewDidLayout() {
         super.viewDidLayout()
-        updateContentTop()
+        // The first layout places the content before the window shows. Later
+        // ones adjust it after the pass: changing a constraint inside it starts
+        // another pass, and while the window frame is also changing (displays
+        // reconfiguring on wake) the passes chain until AppKit aborts.
+        guard contentTopUpdatePending == false else { return }
+        guard view.window?.isVisible == true else { return updateContentTop() }
+        contentTopUpdatePending = true
+        DispatchQueue.main.async { [weak self] in
+            self?.contentTopUpdatePending = false
+            self?.updateContentTop()
+        }
     }
 
     /// The safe area also covers the tab bar's height, though the tab bar only
@@ -96,7 +108,8 @@ final class SidebarViewController: NSViewController {
             let toolbarBottom = view.bounds.maxY - toolbarView.convert(toolbarView.bounds, to: view).minY
             top = min(safeTop, max(0, toolbarBottom))
         }
-        if contentTop.constant != top {
+        // Sub-point differences come from rounding and would only add passes.
+        if abs(contentTop.constant - top) >= 0.5 {
             contentTop.constant = top
         }
     }
