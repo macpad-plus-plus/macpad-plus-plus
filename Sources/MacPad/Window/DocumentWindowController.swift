@@ -28,6 +28,20 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
         toolbar.allowsUserCustomization = false
         window.toolbar = toolbar
         window.toolbarStyle = .unified
+
+        // Returning to the app, or switching to this tab, checks whether another
+        // app changed or deleted the file.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(checkForExternalChanges),
+            name: NSWindow.didBecomeKeyNotification, object: window)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(checkForExternalChanges),
+            name: NSApplication.didBecomeActiveNotification, object: nil)
+    }
+
+    @objc private func checkForExternalChanges() {
+        guard let window, window.isKeyWindow, let document = document as? TextDocument else { return }
+        document.checkForExternalChanges(in: window)
     }
 
     @available(*, unavailable)

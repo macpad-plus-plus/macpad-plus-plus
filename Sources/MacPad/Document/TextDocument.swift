@@ -8,6 +8,8 @@ final class TextDocument: NSDocument {
     private(set) weak var editor: ScintillaEditor?
     /// File contents read before the editor exists (the normal open path).
     private var pendingText: TextCodec.Decoded?
+    /// Set while the "changed by another app" sheet is up, so it is asked once.
+    var isPresentingExternalChangeAlert = false
 
     override init() {
         super.init()
@@ -72,6 +74,20 @@ final class TextDocument: NSDocument {
             }
             completionHandler(error)
         }
+    }
+
+    // MARK: File coordination
+
+    /// Deleting in Finder moves the file to the Trash, and NSDocument would follow
+    /// it there. Keep the original path instead, so the document reports the file
+    /// as deleted and Save recreates it where it was.
+    override func presentedItemDidMove(to newURL: URL) {
+        let trash = FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).first?.standardizedFileURL.path
+        let path = newURL.standardizedFileURL.path
+        if path.contains("/.Trash/") || (trash.map { path.hasPrefix($0 + "/") } ?? false) {
+            return
+        }
+        super.presentedItemDidMove(to: newURL)
     }
 
     // MARK: Save panel
