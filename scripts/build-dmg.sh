@@ -1,7 +1,12 @@
 #!/bin/bash
 # Builds MacPad++ in Release and packages it as a DMG in dist/.
 #
-#   scripts/build-dmg.sh
+#   scripts/build-dmg.sh [apple-silicon|universal]
+#
+#   apple-silicon  arm64 only: smaller, for Macs with M-series chips (most users)
+#   universal      arm64 + x86_64: also runs on Intel Macs (default)
+#
+#   Output: dist/MacPad++-<version>-<variant>.dmg (+ .sha256)
 #
 # Optional environment:
 #   BUILD_NUMBER                 CURRENT_PROJECT_VERSION override (CI uses the run number)
@@ -17,6 +22,13 @@ cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 CREATE_DMG_VERSION="8.1.0"
 
+VARIANT="${1:-universal}"
+case "$VARIANT" in
+    apple-silicon) ARCHS="arm64" ;;
+    universal) ARCHS="arm64 x86_64" ;;
+    *) echo "usage: $0 [apple-silicon|universal]" >&2; exit 2 ;;
+esac
+
 VERSION="$(sed -n 's/^ *MARKETING_VERSION: *"\{0,1\}\([0-9][0-9.]*\)"\{0,1\}.*/\1/p' project.yml | head -1)"
 [[ -n "$VERSION" ]] || { echo "error: MARKETING_VERSION not found in project.yml" >&2; exit 1; }
 
@@ -24,7 +36,7 @@ VERSION="$(sed -n 's/^ *MARKETING_VERSION: *"\{0,1\}\([0-9][0-9.]*\)"\{0,1\}.*/\
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/macpad-release.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 
-echo "==> MacPad++ $VERSION"
+echo "==> MacPad++ $VERSION ($VARIANT: $ARCHS)"
 xcodegen generate --quiet
 
 BUILD_SETTINGS=()
@@ -42,9 +54,8 @@ else
 fi
 
 echo "==> Building"
-# Generic destination: a universal binary for Apple silicon and Intel.
 xcodebuild -project MacPad.xcodeproj -scheme MacPad -configuration Release \
-    -destination "generic/platform=macOS" ONLY_ACTIVE_ARCH=NO \
+    -destination "generic/platform=macOS" ARCHS="$ARCHS" ONLY_ACTIVE_ARCH=NO \
     -derivedDataPath "$WORK/DerivedData" ${BUILD_SETTINGS[@]+"${BUILD_SETTINGS[@]}"} \
     build | grep -E "^(\*\*|.*error:)" || true
 APP="$WORK/DerivedData/Build/Products/Release/MacPad++.app"
@@ -77,7 +88,7 @@ if [[ -f "$BACKGROUND" ]]; then
     hdiutil convert "$WORK/rw.dmg" -format "$FORMAT" -o "$CREATED" -quiet
 fi
 
-DMG="$ROOT/dist/MacPad++-$VERSION.dmg"
+DMG="$ROOT/dist/MacPad++-$VERSION-$VARIANT.dmg"
 mv -f "$CREATED" "$DMG"
 if [[ -n "${DEVELOPER_ID_APPLICATION:-}" ]]; then
     codesign --sign "$DEVELOPER_ID_APPLICATION" --timestamp "$DMG"

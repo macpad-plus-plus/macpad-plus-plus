@@ -66,7 +66,7 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           rm "$RUNNER_TEMP/certificate.p12"
 
-      - name: Build DMG
+      - name: Build DMGs
         env:
           BUILD_NUMBER: ${{ github.run_number }}
           DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
@@ -74,7 +74,9 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-        run: scripts/build-dmg.sh
+        run: |
+          scripts/build-dmg.sh apple-silicon
+          scripts/build-dmg.sh universal
 
       - name: Write release notes
         env:
@@ -91,7 +93,13 @@ jobs:
             echo
             echo "### Download"
             echo
-            echo "**MacPad++-$VERSION.dmg**: open it and drag MacPad++ to Applications. Universal (Apple silicon and Intel), macOS 14 or later."
+            echo "| Your Mac | Download |"
+            echo "|---|---|"
+            echo "| Apple silicon (M1 or later) | **MacPad++-$VERSION-apple-silicon.dmg** (smaller) |"
+            echo "| Intel, or not sure | **MacPad++-$VERSION-universal.dmg** (runs on any Mac) |"
+            echo
+            echo "To check: Apple menu ▸ About This Mac shows *Chip* (Apple silicon) or *Processor* (Intel)."
+            echo "Open the DMG and drag MacPad++ to Applications. Requires macOS 14 or later."
             if [[ "$HAS_SIGNING" != "true" ]]; then
               echo
               echo "This build is not notarized by Apple yet. The first time, macOS will refuse to open it:"
@@ -106,7 +114,8 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            "dist/MacPad++-$VERSION.dmg" "dist/MacPad++-$VERSION.dmg.sha256" \
+            "dist/MacPad++-$VERSION-apple-silicon.dmg" "dist/MacPad++-$VERSION-apple-silicon.dmg.sha256" \
+            "dist/MacPad++-$VERSION-universal.dmg" "dist/MacPad++-$VERSION-universal.dmg.sha256" \
             --title "MacPad++ $VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --verify-tag
