@@ -7,6 +7,14 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-18
+
+### Fixed
+
+- Opening About MacPad++ no longer quits the app. The window kept resizing itself until
+  macOS stopped the app; this is also what made MacPad++ quit after waking from sleep,
+  which 0.3.1 did not fix.
+
 ## [0.3.1] - 2026-10-18
 
 ### Fixed
@@ -81,7 +89,8 @@ First release: a preview of Notepad++'s editing experience as a native Mac app.
 - Links to [macpad-plus-plus.org](https://macpad-plus-plus.org) and the GitHub
   repository in the About window and the Help menu.
 
-[Unreleased]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.2.0...v0.2.1
