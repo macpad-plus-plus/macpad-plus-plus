@@ -93,6 +93,19 @@ targets:
       - path: Sources/MacPad/Resources/FunctionList
         type: folder
         buildPhase: resources
+    # The Xcode project is generated, so it keeps the old version until
+    # `xcodegen generate` runs again. Fail instead of building a stale app.
+    preBuildScripts:
+      - name: Check project matches project.yml
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(SRCROOT)/project.yml
+        script: |
+          expected="$(sed -n 's/^ *MARKETING_VERSION: *"\{0,1\}\([0-9][0-9.]*\)"\{0,1\}.*/\1/p' "$SRCROOT/project.yml" | head -1)"
+          if [ "$MARKETING_VERSION" != "$expected" ]; then
+            echo "error: project.yml says version $expected but MacPad.xcodeproj has $MARKETING_VERSION. Run 'xcodegen generate' and build again."
+            exit 1
+          fi
     dependencies:
       - target: Scintilla
         embed: true
