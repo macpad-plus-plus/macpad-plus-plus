@@ -32,11 +32,6 @@ enum AppLanguage {
         }
     }
 
-    /// The language the interface is showing right now.
-    static var current: String {
-        Bundle.main.preferredLocalizations.first ?? "en"
-    }
-
     /// Quits (saving the session) and starts a new instance once this one has exited.
     @MainActor
     static func relaunch() {

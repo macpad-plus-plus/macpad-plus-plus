@@ -119,9 +119,7 @@ enum MainMenu {
         // Grouped by first letter, as in Notepad++.
         let languages = Language.all.filter { $0 != .normalText }
         let groups = Dictionary(grouping: languages) { String($0.name.prefix(1)).uppercased() }
-        if let normalText = Language.with(id: Language.normalText.id) {
-            addItem(for: normalText, to: menu)
-        }
+        addItem(for: .normalText, to: menu)
         menu.addItem(.separator())
         for letter in groups.keys.sorted() {
             let submenu = NSMenu(title: letter)

@@ -11,8 +11,7 @@ final class DocumentController: NSDocumentController {
         didReviewAllSelector: Selector?, contextInfo: UnsafeMutableRawPointer?
     ) {
         // Only reached when quitting (or logging out / restarting).
-        let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-        guard Preferences.restoreSession, !isRunningTests else {
+        guard Preferences.restoreSession, !AppDelegate.isRunningTests else {
             return super.reviewUnsavedDocuments(
                 withAlertTitle: title, cancellable: cancellable, delegate: delegate,
                 didReviewAllSelector: didReviewAllSelector, contextInfo: contextInfo)

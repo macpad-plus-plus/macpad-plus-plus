@@ -28,24 +28,22 @@ struct Language: Identifiable, Hashable, Sendable {
     var keywords: [Int: String] = [:]
     var styles: [TokenKind: [Int32]] = [:]
     var properties: [String: String] = [:]
-    var commentLine: String?
-    var commentStart: String?
-    var commentEnd: String?
 
     static func == (lhs: Language, rhs: Language) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 extension Language {
-    static let normalText = Language(id: "normal", name: String(localized: "Normal Text"), lexer: "null", extensions: ["txt"])
-
     /// Every language, sorted by display name, with Normal Text first.
     static let all: [Language] = {
+        let fallback = Language(id: "normal", name: String(localized: "Normal Text"), lexer: "null", extensions: ["txt"])
         let loaded = LanguageCatalog.loadBundled()
-        var languages = loaded.filter { $0.id != normalText.id } + extras
+        var languages = loaded.filter { $0.id != fallback.id } + extras
         languages.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        return [loaded.first { $0.id == normalText.id } ?? normalText] + languages
+        return [loaded.first { $0.id == fallback.id } ?? fallback] + languages
     }()
+
+    static var normalText: Language { all[0] }
 
     private static let byID: [String: Language] = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
@@ -70,7 +68,7 @@ extension Language {
                 if let language = with(id: id) { return language }
             }
         }
-        return with(id: normalText.id) ?? normalText
+        return normalText
     }
 
     /// Languages Notepad++ handles through user-defined languages, built in here

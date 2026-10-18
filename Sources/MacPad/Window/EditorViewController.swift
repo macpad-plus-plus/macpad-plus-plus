@@ -127,29 +127,26 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
     @objc func useSelectionForFind(_ sender: Any?) {
         let selection = editor.selectedText
         guard !selection.isEmpty else { NSSound.beep(); return }
-        var options = findBar.options
-        options.query = selection
-        findBar.options = options
+        findBar.query = selection
         FindPasteboard.string = selection
         searchAnchor = editor.selectionRange.lowerBound
         refreshMatches()
     }
 
     /// Search ▸ Replace: replaces the selected match and moves to the next one.
+    /// Until there is something to replace, it opens the replace bar instead.
     @objc func replaceMatch(_ sender: Any?) {
-        guard !findBar.isHidden, findBar.mode == .replace, !findBar.options.query.isEmpty else {
-            presentFindBar(mode: .replace)
-            return
-        }
+        guard isReadyToReplace else { return presentFindBar(mode: .replace) }
         findBarReplace(findBar)
     }
 
     @objc func replaceAllMatches(_ sender: Any?) {
-        guard !findBar.isHidden, findBar.mode == .replace, !findBar.options.query.isEmpty else {
-            presentFindBar(mode: .replace)
-            return
-        }
+        guard isReadyToReplace else { return presentFindBar(mode: .replace) }
         findBarReplaceAll(findBar)
+    }
+
+    private var isReadyToReplace: Bool {
+        !findBar.isHidden && findBar.mode == .replace && !findBar.query.isEmpty
     }
 
     /// Search ▸ Go to Line…: accepts "line" or "line:column".
@@ -188,19 +185,17 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
 
     private func presentFindBar(mode: FindBarView.Mode) {
         let selection = editor.selectedText
-        var options = findBar.options
         if !selection.isEmpty, !selection.contains(where: \.isNewline) {
-            options.query = selection
+            findBar.query = selection
         } else if findBar.isHidden, let shared = FindPasteboard.string {
-            options.query = shared
+            findBar.query = shared
         }
-        findBar.options = options
         findBar.mode = mode
         searchAnchor = editor.selectionRange.lowerBound
         if findBar.isHidden {
             setFindBarVisible(true)
         }
-        view.window?.makeFirstResponder(mode == .replace && !options.query.isEmpty ? findBar.replaceField : findBar.searchField)
+        view.window?.makeFirstResponder(mode == .replace && !findBar.query.isEmpty ? findBar.replaceField : findBar.searchField)
         refreshMatches()
     }
 
@@ -215,12 +210,10 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
 
     private func performFind(forward: Bool) {
         if findBar.isHidden {
-            if findBar.options.query.isEmpty, let shared = FindPasteboard.string {
-                var options = findBar.options
-                options.query = shared
-                findBar.options = options
+            if findBar.query.isEmpty, let shared = FindPasteboard.string {
+                findBar.query = shared
             }
-            guard !findBar.options.query.isEmpty else {
+            guard !findBar.query.isEmpty else {
                 presentFindBar(mode: .find)
                 return
             }

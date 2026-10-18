@@ -41,19 +41,16 @@ final class FindBarView: NSVisualEffectView, NSSearchFieldDelegate, NSTextFieldD
     }
 
     var options: SearchOptions {
-        get {
-            SearchOptions(
-                query: searchField.stringValue,
-                matchCase: matchCaseButton.state == .on,
-                wholeWord: wholeWordButton.state == .on,
-                regex: regexButton.state == .on)
-        }
-        set {
-            searchField.stringValue = newValue.query
-            matchCaseButton.state = newValue.matchCase ? .on : .off
-            wholeWordButton.state = newValue.wholeWord ? .on : .off
-            regexButton.state = newValue.regex ? .on : .off
-        }
+        SearchOptions(
+            query: searchField.stringValue,
+            matchCase: matchCaseButton.state == .on,
+            wholeWord: wholeWordButton.state == .on,
+            regex: regexButton.state == .on)
+    }
+
+    var query: String {
+        get { searchField.stringValue }
+        set { searchField.stringValue = newValue }
     }
 
     var replacement: String { replaceField.stringValue }
@@ -201,9 +198,9 @@ final class FindBarView: NSVisualEffectView, NSSearchFieldDelegate, NSTextFieldD
         case let .matches(current, total, truncated):
             let totalText = truncated ? "\(total.formatted())+" : total.formatted()
             if let current {
-                statusLabel.stringValue = "\(current.formatted()) of \(totalText)"
+                statusLabel.stringValue = String(localized: "\(current.formatted()) of \(totalText)")
             } else {
-                statusLabel.stringValue = total == 1 ? "1 match" : "\(totalText) matches"
+                statusLabel.stringValue = String(localized: "Matches: \(totalText)")
             }
         case .notFound:
             statusLabel.stringValue = String(localized: "Not found")

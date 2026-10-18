@@ -23,7 +23,6 @@ final class LanguageCatalogTests: XCTestCase {
         XCTAssertTrue(try XCTUnwrap(cpp.keywords[2]).contains("brief"))      // doxygen
         XCTAssertEqual(cpp.styles[.keyword], [SCE_C_WORD])
         XCTAssertEqual(cpp.styles[.type], [SCE_C_WORD2])
-        XCTAssertEqual(cpp.commentLine, "//")
     }
 
     func testStyleClassification() {

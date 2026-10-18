@@ -32,7 +32,6 @@ struct FunctionListParser: Sendable {
         var function: FunctionRule?
     }
 
-    var displayName: String
     var comment: BoostRegex?
     var classRule: ClassRule?
     var function: FunctionRule?
@@ -130,7 +129,6 @@ struct FunctionListParser: Sendable {
                 classNameExprs: try chain(element, "className", "nameExpr"))
         }
 
-        displayName = parser.attribute(forName: "displayName")?.stringValue ?? ""
         comment = try regex(parser, "commentExpr")
         function = try functionRule(parser.elements(forName: "function").first)
         if let range = parser.elements(forName: "classRange").first, let main = try regex(range, "mainExpr") {

@@ -3,18 +3,18 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Unit tests run inside the app; keep them away from the user's session.
-    private let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    nonisolated static let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         Preferences.register()
         Chrome.registerFonts()
-        guard !isRunningTests, Preferences.restoreSession else { return }
+        guard !Self.isRunningTests, Preferences.restoreSession else { return }
         // Before files passed from Finder are opened, so they join the restored tabs.
         SessionStore.shared.restore()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard !isRunningTests else { return }
+        guard !Self.isRunningTests else { return }
         SessionStore.shared.startPeriodicBackups()
     }
 

@@ -58,10 +58,7 @@ enum LanguageCatalog {
                 fileNames: fileNames[entry.name] ?? [],
                 keywords: keywords,
                 styles: styles,
-                properties: properties(language: entry.name, lexer: lexer),
-                commentLine: entry.commentLine,
-                commentStart: entry.commentStart,
-                commentEnd: entry.commentEnd)
+                properties: properties(language: entry.name, lexer: lexer))
         }
     }
 
@@ -321,9 +318,6 @@ final class LangsParser: NSObject, XMLParserDelegate {
     struct Entry {
         var name: String
         var extensions: [String]
-        var commentLine: String?
-        var commentStart: String?
-        var commentEnd: String?
         var keywords: [String: String] = [:]
     }
 
@@ -343,13 +337,9 @@ final class LangsParser: NSObject, XMLParserDelegate {
                 qualifiedName qName: String?, attributes: [String: String] = [:]) {
         switch elementName {
         case "Language":
-            func nonEmpty(_ key: String) -> String? { attributes[key].flatMap { $0.isEmpty ? nil : $0 } }
             current = Entry(
                 name: attributes["name"] ?? "",
-                extensions: (attributes["ext"] ?? "").lowercased().split(separator: " ").map(String.init),
-                commentLine: nonEmpty("commentLine"),
-                commentStart: nonEmpty("commentStart"),
-                commentEnd: nonEmpty("commentEnd"))
+                extensions: (attributes["ext"] ?? "").lowercased().split(separator: " ").map(String.init))
         case "Keywords":
             keywordClass = attributes["name"]
             text = ""

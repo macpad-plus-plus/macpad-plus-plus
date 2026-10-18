@@ -163,9 +163,8 @@ final class FileTreeViewController: NSViewController, NSOutlineViewDataSource, N
 
     func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
         guard let node = item as? FileNode else { return nil }
-        let cell = outlineView.makeView(withIdentifier: .init("FileCell"), owner: self) as? NSTableCellView ?? SidebarCell.make(identifier: "FileCell")
+        let cell = SidebarCell.dequeue("FileCell", from: outlineView)
         cell.textField?.stringValue = node.isRoot ? FileManager.default.displayName(atPath: node.url.path) : node.url.lastPathComponent
-        cell.textField?.font = Chrome.isClassic ? Chrome.font(ofSize: 11) : .systemFont(ofSize: NSFont.systemFontSize)
         let icon = NSWorkspace.shared.icon(forFile: node.url.path)
         icon.size = NSSize(width: 16, height: 16)
         cell.imageView?.image = icon
@@ -181,10 +180,14 @@ final class FileTreeViewController: NSViewController, NSOutlineViewDataSource, N
             if node.isDirectory {
                 outlineView.isItemExpanded(node) ? outlineView.collapseItem(node) : outlineView.expandItem(node)
             } else {
-                NSDocumentController.shared.openDocument(withContentsOf: node.url, display: true) { _, _, error in
-                    if let error { NSApp.presentError(error) }
-                }
+                open(node.url)
             }
+        }
+    }
+
+    private func open(_ url: URL) {
+        NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
+            if let error { NSApp.presentError(error) }
         }
     }
 
@@ -230,7 +233,7 @@ final class FileTreeViewController: NSViewController, NSOutlineViewDataSource, N
 
     @objc private func openClicked(_ sender: Any?) {
         guard let node = clickedNode else { return }
-        NSDocumentController.shared.openDocument(withContentsOf: node.url, display: true) { _, _, _ in }
+        open(node.url)
     }
 
     @objc private func revealClicked(_ sender: Any?) {
@@ -278,7 +281,14 @@ final class FileTreeViewController: NSViewController, NSOutlineViewDataSource, N
 /// Image + label cell shared by the sidebar lists.
 @MainActor
 enum SidebarCell {
-    static func make(identifier: String) -> NSTableCellView {
+    /// A reused or new cell, in the current theme's font.
+    static func dequeue(_ identifier: String, from outlineView: NSOutlineView) -> NSTableCellView {
+        let cell = outlineView.makeView(withIdentifier: .init(identifier), owner: nil) as? NSTableCellView ?? make(identifier: identifier)
+        cell.textField?.font = Chrome.isClassic ? Chrome.font(ofSize: 11) : .systemFont(ofSize: NSFont.systemFontSize)
+        return cell
+    }
+
+    private static func make(identifier: String) -> NSTableCellView {
         let cell = NSTableCellView()
         cell.identifier = .init(identifier)
         let imageView = NSImageView()

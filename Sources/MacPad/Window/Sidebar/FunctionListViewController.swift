@@ -172,9 +172,8 @@ final class FunctionListViewController: NSViewController, NSOutlineViewDataSourc
 
     func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
         guard let node = item as? Node else { return nil }
-        let cell = outlineView.makeView(withIdentifier: .init("SymbolCell"), owner: self) as? NSTableCellView ?? SidebarCell.make(identifier: "SymbolCell")
+        let cell = SidebarCell.dequeue("SymbolCell", from: outlineView)
         cell.textField?.stringValue = node.name
-        cell.textField?.font = Chrome.isClassic ? Chrome.font(ofSize: 11) : .systemFont(ofSize: NSFont.systemFontSize)
         cell.textField?.lineBreakMode = .byTruncatingTail
         // Xcode-style badges: a class "C" in purple, a function "ƒ" in blue.
         let symbol = node.isContainer ? "c.square.fill" : "f.square.fill"
