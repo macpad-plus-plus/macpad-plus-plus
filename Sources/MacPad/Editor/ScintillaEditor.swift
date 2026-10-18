@@ -38,6 +38,9 @@ final class ScintillaEditor: ScintillaView {
         NotificationCenter.default.addObserver(
             self, selector: #selector(preferencesDidChange),
             name: Preferences.didChange, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(updateScrollerMargin),
+            name: NSScroller.preferredScrollerStyleDidChangeNotification, object: nil)
     }
 
     @available(*, unavailable)
@@ -78,6 +81,7 @@ final class ScintillaEditor: ScintillaView {
         send(SCI_SETMARGINSENSITIVEN, Margin.folding, 1)
         send(SCI_SETMARGINWIDTHN, Margin.folding, 14)
         send(SCI_SETMARGINLEFT, 0, 4)
+        updateScrollerMargin()
 
         // Disclosure-style fold markers read more naturally on macOS than
         // Notepad++'s box tree.
@@ -98,6 +102,38 @@ final class ScintillaEditor: ScintillaView {
 
         wrapsLines = settings.wrapLines
         applySettings()
+    }
+
+    private var scrollerMargin = -1
+
+    /// Scintilla draws text across the whole clip view, including the strip under
+    /// the vertical scroller (with both overlay and always-shown scrollers), so the
+    /// end of long lines would hide behind it. Reserve the covered width as a
+    /// right text margin, measured from the actual layout.
+    @objc func updateScrollerMargin() {
+        var covered: CGFloat = 0
+        if let scroller = scrollView.verticalScroller, scrollView.hasVerticalScroller, !scroller.isHidden {
+            let overlap = scrollView.contentView.frame.maxX - scroller.frame.minX
+            // Overlay scrollers widen while in use; reserve their widest form.
+            let width = scrollView.scrollerStyle == .overlay
+                ? NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy)
+                : scroller.frame.width
+            covered = overlap > 0 ? max(overlap, width) : 0
+        }
+        let margin = Int(covered.rounded(.up)) + 2
+        guard margin != scrollerMargin else { return }
+        scrollerMargin = margin
+        send(SCI_SETMARGINRIGHT, 0, margin)
+    }
+
+    override func layout() {
+        super.layout()
+        updateScrollerMargin()
+    }
+
+    override func resizeSubviews(withOldSize oldSize: NSSize) {
+        super.resizeSubviews(withOldSize: oldSize)
+        updateScrollerMargin()
     }
 
     /// Applies the non-colour editor preferences, then the theme.
@@ -370,6 +406,8 @@ final class ScintillaEditor: ScintillaView {
         case SCN_SAVEPOINTREACHED:
             onDirtyChange?(false)
         case SCN_UPDATEUI:
+            // Scrollers appear and disappear as the content grows or shrinks.
+            updateScrollerMargin()
             highlightMatchingBrace()
             onStatusChange?()
         case SCN_MODIFIED where scn.modificationType & Int32(SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT) != 0:

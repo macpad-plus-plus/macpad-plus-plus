@@ -2025,12 +2025,21 @@ bool ScintillaCocoa::SetScrollingSize() {
 		// Allow extra space so that last scroll position places whole line at top
 		const int clipExtra = int(clipRect.size.height) % vs.lineHeight;
 		docHeight += clipExtra;
+		const bool showHorizontalScroll = horizontalScrollBarVisible &&
+					    !Wrapping();
+		// MacPad++ patch: the clip view extends under the scrollers, and
+		// NSScrollView lets trackpad scrolling reach the very end of the
+		// document view, which put the end of long lines under the vertical
+		// scroller and the last line under the horizontal one. Extend the
+		// document by the right margin (sized to the scroller by the app) and,
+		// when lines overflow, by the horizontal scroller's height.
+		const CGFloat docWidth = Wrapping() ? clipRect.size.width : scrollWidth + vs.rightMarginWidth;
+		if (showHorizontalScroll && docWidth > clipRect.size.width)
+			docHeight += [NSScroller scrollerWidthForControlSize: NSControlSizeRegular
+								    scrollerStyle: NSScrollerStyleLegacy];
 		// Ensure all of clipRect covered by Scintilla drawing
 		if (docHeight < clipRect.size.height)
 			docHeight = clipRect.size.height;
-		const bool showHorizontalScroll = horizontalScrollBarVisible &&
-					    !Wrapping();
-		const CGFloat docWidth = Wrapping() ? clipRect.size.width : scrollWidth;
 		const NSRect contentRect = NSMakeRect(0, 0, docWidth, docHeight);
 		changes = !CGSizeEqualToSize(contentRect.size, inner.frame.size);
 		if (changes) {
