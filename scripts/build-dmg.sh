@@ -51,6 +51,10 @@ if [[ -n "${DEVELOPER_ID_APPLICATION:-}" ]]; then
     )
 else
     echo "==> No DEVELOPER_ID_APPLICATION: ad-hoc signing (Gatekeeper will warn on first launch)"
+    # The hardened runtime enforces library validation: frameworks must share the app's
+    # Team ID, which ad-hoc signatures don't have, so dyld refuses to load Scintilla.
+    # It is only needed for notarization, which requires a Developer ID anyway.
+    BUILD_SETTINGS+=("ENABLE_HARDENED_RUNTIME=NO")
 fi
 
 echo "==> Building"
@@ -60,7 +64,14 @@ xcodebuild -project MacPad.xcodeproj -scheme MacPad -configuration Release \
     build | grep -E "^(\*\*|.*error:)" || true
 APP="$WORK/DerivedData/Build/Products/Release/MacPad++.app"
 [[ -d "$APP" ]] || { echo "error: build failed, see xcodebuild output" >&2; exit 1; }
+BUILT_VERSION="$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist")"
+[[ "$BUILT_VERSION" == "$VERSION" ]] || { echo "error: built app is $BUILT_VERSION, expected $VERSION" >&2; exit 1; }
 codesign --verify --deep --strict "$APP"
+SIGNATURE="$(codesign -dv "$APP" 2>&1)"
+if grep -q "Signature=adhoc" <<<"$SIGNATURE" && grep -q "flags=.*runtime" <<<"$SIGNATURE"; then
+    echo "error: ad-hoc signed app has the hardened runtime on; it would crash at launch" >&2
+    exit 1
+fi
 lipo -info "$APP/Contents/MacOS/MacPad++"
 
 echo "==> Creating DMG"
