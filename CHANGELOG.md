@@ -7,6 +7,19 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-18
+
+### Changed
+
+- The Classic theme now dresses the whole window as Mac OS 9 Platinum: a grey frame, a
+  pinstriped title bar with close, zoom and collapse boxes in place of the traffic lights,
+  Platinum tabs (click to switch, close box on each, "+" for a new document), Platinum
+  scroll bars with arrow buttons, and a plain grey sidebar that runs the full height of
+  the window. Dialogs, menus and Settings use the dark appearance under Classic.
+- The Folder Workspace / Function List switcher moved from the top of the sidebar to the
+  toolbar row above it (in Classic, to the tab strip), and the lists start right below it.
+- The sidebar can no longer be narrowed below 220 points, so the switcher always fits.
+
 ## [0.2.1] - 2026-10-18
 
 ### Fixed
