@@ -56,14 +56,22 @@ def extract_keys():
     saved = template.read_text(encoding="utf-8")
     with tempfile.TemporaryDirectory() as tmp:
         env = dict(os.environ)
-        env.setdefault("DEVELOPER_DIR", "/Applications/Xcode.app/Contents/Developer")
+        # Use the selected Xcode (as CI's setup-xcode does), unless only the
+        # Command Line Tools are selected, which cannot export localizations.
+        selected = subprocess.run(["xcode-select", "-p"], capture_output=True, text=True).stdout.strip()
+        if "DEVELOPER_DIR" not in env and (not selected or "CommandLineTools" in selected):
+            env["DEVELOPER_DIR"] = "/Applications/Xcode.app/Contents/Developer"
         subprocess.run(["xcodegen", "generate", "--quiet"], cwd=ROOT, check=True)
         template.write_text("", encoding="utf-8")
         try:
-            subprocess.run(
+            result = subprocess.run(
                 ["xcodebuild", "-exportLocalizations", "-project", "MacPad.xcodeproj",
                  "-localizationPath", tmp, "-exportLanguage", "en"],
-                cwd=ROOT, env=env, check=True, stdout=subprocess.DEVNULL)
+                cwd=ROOT, env=env, capture_output=True, text=True)
+            if result.returncode != 0:
+                # The build errors are otherwise lost; show the end of the log.
+                print("\n".join((result.stdout + result.stderr).splitlines()[-60:]), file=sys.stderr)
+                result.check_returncode()
         finally:
             template.write_text(saved, encoding="utf-8")
         xliff = next(Path(tmp).rglob("en.xliff"))

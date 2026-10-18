@@ -3,6 +3,7 @@ import AppKit
 /// Mac OS 9 Platinum window frame for the Classic theme: a pinstriped title bar
 /// with close, zoom and collapse boxes drawn over the system title bar, whose
 /// traffic lights and title are hidden while it is shown.
+@MainActor
 enum ClassicWindowFrame {
     private static let titleBarID = NSUserInterfaceItemIdentifier("ClassicTitleBar")
 
