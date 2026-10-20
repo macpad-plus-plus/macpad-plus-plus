@@ -7,6 +7,12 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-20
+
+### Changed
+
+- A new app icon: the axolotl mascot with its ++, centred on a white tile.
+
 ## [0.4.0] - 2026-10-20
 
 ### Added
@@ -114,7 +120,8 @@ First release: a preview of Notepad++'s editing experience as a native Mac app.
 - Links to [macpad-plus-plus.org](https://macpad-plus-plus.org) and the GitHub
   repository in the About window and the Help menu.
 
-[Unreleased]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/macpad-plus-plus/macpad-plus-plus/compare/v0.3.0...v0.3.1
