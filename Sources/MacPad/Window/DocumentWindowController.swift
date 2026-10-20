@@ -45,6 +45,16 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
         NotificationCenter.default.addObserver(
             self, selector: #selector(checkForExternalChanges),
             name: NSApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(documentTabDidChange),
+            name: TextDocument.tabDidChangeNotification, object: document)
+    }
+
+    /// The tab shows the document's name, pin and color.
+    @objc private func documentTabDidChange() {
+        synchronizeWindowTitleWithDocumentName()
+        updateTabAccessory()
+        editorController?.refreshStatus()
     }
 
     /// Kept while the Classic theme replaces the title bar, so it can come back.
@@ -80,6 +90,9 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
         if let window, let group = window.tabGroup, !group.isTabBarVisible {
             window.toggleTabBar(nil)
         }
+        // A new tab opens after the current one, which may be among the pinned.
+        if let window { TabOrder.keepPinnedFirst(in: window) }
+        updateTabAccessory()
     }
 
     // MARK: Toolbar

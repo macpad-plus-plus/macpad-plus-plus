@@ -398,6 +398,12 @@ final class ScintillaEditor: ScintillaView {
         set { send(SCI_SETVIEWWS, Int(newValue ? SCWS_VISIBLEALWAYS : SCWS_INVISIBLE)) }
     }
 
+    /// Typing and edits are refused; the text can still be selected and copied.
+    var isReadOnly: Bool {
+        get { send(SCI_GETREADONLY) != 0 }
+        set { send(SCI_SETREADONLY, newValue ? 1 : 0) }
+    }
+
     var showsLineEndings: Bool {
         get { send(SCI_GETVIEWEOL) != 0 }
         set { send(SCI_SETVIEWEOL, newValue ? 1 : 0) }

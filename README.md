@@ -31,6 +31,10 @@ So I built it (with Claude's help).
 - Find bar (⌘F) and Find & Replace (⌥⌘F): match case, whole word, regular expressions
   (`\1` or `$1` in replacements), live match count and highlighting, shared find pasteboard (⌘E)
 - Encoding detection (UTF-8, UTF-8 BOM, UTF-16 LE/BE, Windows-1252) and line-ending handling
+- Follow File (tail -f, ⌥⌘T): read-only, shows what is appended, colors error/warning/debug
+  lines, survives truncation and rotation
+- Tab menu: pin, rename, read-only, tab colors, reveal in Finder, open in a terminal (Terminal,
+  iTerm, Warp, Ghostty or your own command), copy path, move to start/end; print with colors
 - Native window tabs, with a toolbar and a sidebar (⌃⌘S):
   - Folder Workspace (⇧⌘O): file tree of one or more folders, live-updated, drag and drop
   - Function List: Notepad++'s function-list parsers (38 languages, plus Swift, Go and Markdown),

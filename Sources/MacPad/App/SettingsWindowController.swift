@@ -77,6 +77,10 @@ private final class SettingsTabViewController: NSTabViewController {
 private struct GeneralSettings: View {
     @AppStorage(Preferences.Key.restoreSession) private var restoreSession = true
     @AppStorage(Preferences.Key.showHiddenFiles) private var showHiddenFiles = false
+    @AppStorage(Preferences.Key.terminal) private var terminal = "terminal"
+    @AppStorage(Preferences.Key.terminalCommand) private var terminalCommand = ""
+    /// Looked up once: it asks Launch Services about each app.
+    private let terminals = Terminal.installed
     @State private var language = AppLanguage.selected
     @State private var confirmRelaunch = false
 
@@ -110,6 +114,28 @@ private struct GeneralSettings: View {
                 Toggle("Show hidden files", isOn: $showHiddenFiles)
             } header: {
                 Text("Folder Workspace")
+            }
+            Section {
+                Picker("Open folders in", selection: $terminal) {
+                    ForEach(terminals) { app in
+                        Text(verbatim: app.name).tag(app.id)
+                    }
+                    // A choice made before its app was removed stays visible.
+                    if terminal != Terminal.custom, !terminals.contains(where: { $0.id == terminal }) {
+                        Text(verbatim: terminal).tag(terminal)
+                    }
+                    Divider()
+                    Text("Custom Command").tag(Terminal.custom)
+                }
+                if terminal == Terminal.custom {
+                    TextField("Command", text: $terminalCommand, prompt: Text(verbatim: "open -a Terminal {dir}"))
+                }
+            } header: {
+                Text("Terminal")
+            } footer: {
+                Text(terminal == Terminal.custom
+                    ? "{dir} is replaced by the folder. Tab ▸ Open in Terminal opens the folder of the front document."
+                    : "Tab ▸ Open in Terminal opens the folder of the front document.")
             }
         }
         .formStyle(.grouped)

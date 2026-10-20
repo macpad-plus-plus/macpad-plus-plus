@@ -17,6 +17,8 @@ enum Preferences {
         static let defaultEncoding = "defaultEncoding"
         static let defaultLineEnding = "defaultLineEnding"
         static let showHiddenFiles = "showHiddenFiles"
+        static let terminal = "terminal"
+        static let terminalCommand = "terminalCommand"
     }
 
     enum Theme: String, CaseIterable, Identifiable {
@@ -59,6 +61,8 @@ enum Preferences {
         Key.defaultEncoding: TextEncoding.utf8.rawValue,
         Key.defaultLineEnding: LineEnding.lf.rawValue,
         Key.showHiddenFiles: false,
+        Key.terminal: "terminal",
+        Key.terminalCommand: "",
     ]
 
     /// Posted on the main queue after any preference changes.
@@ -85,6 +89,10 @@ enum Preferences {
     static var theme: Theme { Theme(rawValue: store.string(forKey: Key.theme) ?? "") ?? .system }
     static var restoreSession: Bool { store.bool(forKey: Key.restoreSession) }
     static var showHiddenFiles: Bool { store.bool(forKey: Key.showHiddenFiles) }
+    /// The terminal that opens a file's folder: a `Terminal.App` id, or `Terminal.custom`.
+    static var terminal: String { store.string(forKey: Key.terminal) ?? "terminal" }
+    /// The custom terminal's command line; `{dir}` is the folder.
+    static var terminalCommand: String { store.string(forKey: Key.terminalCommand) ?? "" }
 
     static var newDocumentFormat: TextFormat {
         TextFormat(

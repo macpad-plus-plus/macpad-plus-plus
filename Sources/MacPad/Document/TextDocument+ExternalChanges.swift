@@ -26,7 +26,8 @@ extension TextDocument {
     /// Checks for an external change and, if there is one, asks the user in a sheet.
     @MainActor
     func checkForExternalChanges(in window: NSWindow) {
-        guard !isPresentingExternalChangeAlert, window.attachedSheet == nil,
+        // A followed file changes all the time, and that is what is shown.
+        guard !isFollowing, !isPresentingExternalChangeAlert, window.attachedSheet == nil,
               let change = externalChange(), let fileURL
         else { return }
         // Ask once per change: after an answer the document matches the disk again,
@@ -87,6 +88,12 @@ extension TextDocument {
         } catch {
             presentError(error)
         }
+    }
+
+    /// Takes the file as it is now on disk as the version this document shows.
+    func acceptDiskVersion() {
+        guard let fileURL else { return }
+        fileModificationDate = Self.modificationDate(of: fileURL)
     }
 
     /// Keeps the editor's text; the document now differs from the file, so it

@@ -7,6 +7,29 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Follow File (tail -f), in the View menu (⌥⌘T), like Notepad++'s Monitoring: the
+  document becomes read-only and shows what other apps append to the file, staying at
+  the bottom unless you scroll up. Error, warning and debug lines are colored, and
+  following survives the file being truncated or rotated. It comes back with the session.
+- A Tab menu with what Notepad++ has on a tab's context menu, for the front tab: pin
+  (pinned tabs stay first, with a pin), rename (untitled documents get a new name, saved
+  ones Save As), read-only, a tab color, reveal in Finder, open the folder in a terminal,
+  copy the folder path, file name or full path, and move to the start or end. Native tabs
+  keep the system's own right-click menu; with the Classic theme, right-clicking a tab
+  shows the Tab menu for it, and double-clicking the free space of the tab bar opens a
+  new document.
+- Settings ▸ General ▸ Terminal: Terminal, iTerm, Warp, Ghostty (those installed) or a
+  command of your own, with `{dir}` for the folder.
+- File ▸ Print… (⌘P) and Page Setup…, with syntax colors.
+
+### Changed
+
+- Untitled documents take the lowest free number, as in Notepad++: after closing
+  "Untitled 3", the next one is "Untitled 3" again. Their names, pins, colors and
+  read-only state are kept in the session.
+
 ## [0.3.2] - 2026-10-18
 
 ### Fixed

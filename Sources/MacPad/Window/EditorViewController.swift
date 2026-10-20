@@ -7,7 +7,10 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
     let editor = ScintillaEditor(frame: .zero)
     private let findBar = FindBarView(frame: .zero)
     private let statusBar = StatusBarView(frame: .zero)
-    private weak var document: TextDocument?
+    private(set) weak var document: TextDocument?
+    /// Polls the followed file (see EditorViewController+Follow).
+    var followTimer: DispatchSourceTimer?
+    var followStatus: FollowStatus?
 
     /// Matches for the current query, kept sorted for the "n of m" counter.
     private var matches: ScintillaEditor.MatchList?
@@ -65,7 +68,8 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
 
     func refreshStatus() {
         guard let document else { return }
-        statusBar.update(caret: editor.caretInfo, language: editor.language, format: document.format)
+        let mode = followStatusText ?? (document.isReadOnly ? String(localized: "Read-only") : nil)
+        statusBar.update(caret: editor.caretInfo, language: editor.language, format: document.format, mode: mode)
     }
 
     // MARK: Language
@@ -350,6 +354,9 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
             return !editor.selectedText.isEmpty
         case #selector(hideFindBar(_:)):
             return !findBar.isHidden
+        case #selector(toggleFollow(_:)):
+            menuItem.state = document?.isFollowing == true ? .on : .off
+            return document?.fileURL != nil
         default:
             break
         }

@@ -18,6 +18,16 @@ struct Session: Codable, Equatable {
         var language: String
         var viewState: ScintillaEditor.ViewState
         var wrapsLines: Bool
+        // Added in 0.4; absent from older sessions.
+        /// N of "Untitled N", kept so names don't change across launches.
+        var untitledNumber: Int?
+        /// A name given with Rename to an untitled document.
+        var name: String?
+        var pinned: Bool?
+        var color: String?
+        var readOnly: Bool?
+        /// The file was being followed (tail -f).
+        var follow: Bool?
     }
 
     var windows: [Window] = []
@@ -106,7 +116,7 @@ final class SessionStore {
         if document.fileURL == nil, !document.isDocumentEdited { return nil }
 
         var backupName: String?
-        if document.isDocumentEdited {
+        if document.isDocumentEdited, !document.isFollowing {
             let id = ObjectIdentifier(document)
             let name = backups[id]?.name ?? "\(UUID().uuidString).txt"
             if backups[id]?.version != editor.contentVersion {
@@ -127,7 +137,13 @@ final class SessionStore {
             lineEnding: document.format.lineEnding.rawValue,
             language: editor.language.id,
             viewState: editor.viewState,
-            wrapsLines: editor.wrapsLines)
+            wrapsLines: editor.wrapsLines,
+            untitledNumber: document.fileURL == nil ? document.untitledNumber : nil,
+            name: document.fileURL == nil ? document.customName : nil,
+            pinned: document.isPinned ? true : nil,
+            color: document.tabColor?.rawValue,
+            readOnly: document.isReadOnly ? true : nil,
+            follow: document.isFollowing ? true : nil)
     }
 
     private func removeOrphanedBackups(keeping names: Set<String>) {
@@ -204,6 +220,11 @@ final class SessionStore {
             return nil
         }
 
+        document.untitledNumber = tab.untitledNumber
+        document.customName = tab.name
+        document.isPinned = tab.pinned ?? false
+        document.tabColor = tab.color.flatMap(TabColor.init(rawValue:))
+        document.isReadOnly = tab.readOnly ?? false
         controller.addDocument(document)
         document.makeWindowControllers()
         guard let window = document.windowControllers.first?.window, let editor = document.editor else { return nil }
@@ -222,8 +243,15 @@ final class SessionStore {
         }
         editor.wrapsLines = tab.wrapsLines
         // Scrolling needs the final layout, which happens once the window is shown.
+        let editorController = (document.windowControllers.first as? DocumentWindowController)?.editorController
         DispatchQueue.main.async {
-            MainActor.assumeIsolated { editor.viewState = tab.viewState }
+            MainActor.assumeIsolated {
+                if tab.follow == true, tab.backup == nil {
+                    editorController?.startFollowing()
+                } else {
+                    editor.viewState = tab.viewState
+                }
+            }
         }
         return window
     }

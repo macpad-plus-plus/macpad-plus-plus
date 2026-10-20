@@ -5,7 +5,7 @@ import AppKit
 enum MainMenu {
     static func build() -> NSMenu {
         let mainMenu = NSMenu()
-        for menu in [appMenu(), fileMenu(), editMenu(), searchMenu(), viewMenu(), languageMenu(), formatMenu(), windowMenu(), helpMenu()] {
+        for menu in [appMenu(), fileMenu(), editMenu(), searchMenu(), viewMenu(), tabMenu(), languageMenu(), formatMenu(), windowMenu(), helpMenu()] {
             let item = NSMenuItem(title: menu.title, action: nil, keyEquivalent: "")
             item.submenu = menu
             mainMenu.addItem(item)
@@ -48,6 +48,19 @@ enum MainMenu {
         menu.addItem(withTitle: String(localized: "Save"), action: #selector(NSDocument.save(_:)), keyEquivalent: "s")
         menu.addItem(withTitle: String(localized: "Save As…"), action: #selector(NSDocument.saveAs(_:)), keyEquivalent: "S")
         menu.addItem(withTitle: String(localized: "Revert to Saved"), action: #selector(NSDocument.revertToSaved(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: String(localized: "Page Setup…"), action: #selector(NSDocument.runPageLayout(_:)), keyEquivalent: "P")
+        menu.addItem(withTitle: String(localized: "Print…"), action: #selector(NSDocument.printDocument(_:)), keyEquivalent: "p")
+        return menu
+    }
+
+    /// What Notepad++ has on a tab's context menu; native tabs keep the
+    /// system's own menu, so these act on the front tab.
+    private static func tabMenu() -> NSMenu {
+        let menu = NSMenu(title: String(localized: "Tab"))
+        for item in TabMenu.items(keyEquivalents: true) {
+            menu.addItem(item)
+        }
         return menu
     }
 
@@ -95,6 +108,9 @@ enum MainMenu {
         menu.addItem(withTitle: String(localized: "Word Wrap"), action: #selector(EditorViewController.toggleWordWrap(_:)), keyEquivalent: "")
         menu.addItem(withTitle: String(localized: "Show Whitespace"), action: #selector(EditorViewController.toggleShowWhitespace(_:)), keyEquivalent: "")
         menu.addItem(withTitle: String(localized: "Show Line Endings"), action: #selector(EditorViewController.toggleShowLineEndings(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: String(localized: "Follow File (tail -f)"), action: #selector(EditorViewController.toggleFollow(_:)), keyEquivalent: "t")
+            .keyEquivalentModifierMask = [.command, .option]
         menu.addItem(.separator())
         menu.addItem(withTitle: String(localized: "Zoom In"), action: #selector(EditorViewController.zoomInText(_:)), keyEquivalent: "+")
         menu.addItem(withTitle: String(localized: "Zoom Out"), action: #selector(EditorViewController.zoomOutText(_:)), keyEquivalent: "-")

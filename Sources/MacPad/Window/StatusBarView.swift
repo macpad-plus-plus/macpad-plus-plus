@@ -8,7 +8,9 @@ final class StatusBarView: NSView {
     private let languageLabel = StatusBarView.makeLabel()
     private let lineEndingLabel = StatusBarView.makeLabel()
     private let encodingLabel = StatusBarView.makeLabel()
-    private var labels: [NSTextField] { [positionLabel, lengthLabel, languageLabel, lineEndingLabel, encodingLabel] }
+    /// Read-only, or following the file.
+    private let modeLabel = StatusBarView.makeLabel()
+    private var labels: [NSTextField] { [positionLabel, lengthLabel, modeLabel, languageLabel, lineEndingLabel, encodingLabel] }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -18,7 +20,7 @@ final class StatusBarView: NSView {
 
         let leading = NSStackView(views: [positionLabel, lengthLabel])
         leading.spacing = 16
-        let trailing = NSStackView(views: [languageLabel, lineEndingLabel, encodingLabel])
+        let trailing = NSStackView(views: [modeLabel, languageLabel, lineEndingLabel, encodingLabel])
         trailing.spacing = 16
 
         let row = NSStackView(views: [leading, NSView(), trailing])
@@ -59,7 +61,9 @@ final class StatusBarView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    func update(caret: ScintillaEditor.CaretInfo, language: Language, format: TextFormat) {
+    func update(caret: ScintillaEditor.CaretInfo, language: Language, format: TextFormat, mode: String? = nil) {
+        modeLabel.stringValue = mode ?? ""
+        modeLabel.isHidden = mode == nil
         var position = String(localized: "Ln \(caret.line), Col \(caret.column)")
         if caret.selectionCount > 1 {
             position += "  ·  " + String(localized: "Selections: \(caret.selectionCount)")

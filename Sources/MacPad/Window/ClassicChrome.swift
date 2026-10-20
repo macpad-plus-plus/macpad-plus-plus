@@ -392,6 +392,8 @@ final class ClassicTabStrip: NSView {
 
     /// Redraws when any tab's title or edited state changes.
     private func observeWindows() {
+        NotificationCenter.default.removeObserver(self, name: TextDocument.tabDidChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(redraw), name: TextDocument.tabDidChangeNotification, object: nil)
         windowObservations = windows.flatMap { window -> [NSKeyValueObservation] in
             [
                 window.observe(\.title) { [weak self] _, _ in
@@ -500,6 +502,13 @@ final class ClassicTabStrip: NSView {
 
         var title = window.title
         if window.isDocumentEdited { title = "• " + title }
+        let document = window.windowController?.document as? TextDocument
+        if document?.isPinned == true { title = "📌 " + title }
+        if let color = document?.tabColor?.color {
+            // The tab's color as a stripe along its bottom edge.
+            color.setFill()
+            NSRect(x: tab.minX + 4, y: tab.maxY - (isSelected ? 4 : 3), width: tab.width - 8, height: 2).fill()
+        }
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineBreakMode = .byTruncatingTail
         paragraph.alignment = .center
@@ -539,6 +548,25 @@ final class ClassicTabStrip: NSView {
 
     // MARK: Interaction
 
+    /// These tabs are drawn here, so unlike native ones they can have
+    /// Notepad++'s whole tab menu, for the tab clicked.
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let point = convert(event.locationInWindow, from: nil)
+        let windows = windows
+        guard let index = tabRects.firstIndex(where: { $0.contains(point) }), index < windows.count,
+              let controller = windows[index].windowController as? DocumentWindowController
+        else { return nil }
+        let menu = NSMenu(title: String(localized: "Tab"))
+        for item in TabMenu.items(target: controller, keyEquivalents: false) {
+            // Close and Move to New Window are the window's own actions.
+            if item.action == #selector(NSWindow.performClose(_:)) || item.action == #selector(NSWindow.moveTabToNewWindow(_:)) {
+                item.target = windows[index]
+            }
+            menu.addItem(item)
+        }
+        return menu
+    }
+
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
         if let index = switcherRects.firstIndex(where: { $0.contains(point) }) {
@@ -552,6 +580,11 @@ final class ClassicTabStrip: NSView {
         }
         let windows = windows
         guard let index = tabRects.firstIndex(where: { $0.contains(point) }), index < windows.count else {
+            // A double click on the free space opens a new tab, like the + box.
+            if event.clickCount == 2, point.x > (tabRects.last?.maxX ?? sidebarEdge) {
+                NSDocumentController.shared.newDocument(nil)
+                return
+            }
             super.mouseDown(with: event)
             return
         }

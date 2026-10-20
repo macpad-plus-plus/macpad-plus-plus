@@ -87,4 +87,42 @@ final class SessionStoreTests: XCTestCase {
         store.save()
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: backups.path).count, 0)
     }
+
+    func testReadsSessionsWithoutTabState() throws {
+        // Written by 0.3, before pins, colors, names and following.
+        let json = """
+        {"windows":[{"selectedTab":0,"tabs":[{"encoding":"utf8","language":"python","lineEnding":"lf",
+        "path":"/tmp/a.py","viewState":{"anchor":0,"caret":0,"firstVisibleLine":0},"wrapsLines":false}]}]}
+        """
+        let session = try JSONDecoder().decode(Session.self, from: Data(json.utf8))
+        let tab = try XCTUnwrap(session.windows.first?.tabs.first)
+        XCTAssertNil(tab.pinned)
+        XCTAssertNil(tab.follow)
+        XCTAssertNil(tab.untitledNumber)
+    }
+
+    func testRestoresTabStateAndUntitledNames() throws {
+        let controller = NSDocumentController.shared
+        let store = SessionStore(directory: directory.appending(path: "Support"))
+        let first = try XCTUnwrap(controller.openUntitledDocumentAndDisplay(true) as? TextDocument)
+        first.editor?.replaceText(utf8: Data("one".utf8))
+        let second = try XCTUnwrap(controller.openUntitledDocumentAndDisplay(true) as? TextDocument)
+        second.editor?.replaceText(utf8: Data("two".utf8))
+        second.isPinned = true
+        second.tabColor = .green
+        second.isReadOnly = true
+        // "Untitled" is closed; the remaining one is "Untitled 2" and stays so.
+        first.updateChangeCount(.changeCleared)
+        first.close()
+
+        store.save()
+        closeAllDocuments()
+        XCTAssertTrue(store.restore())
+        let restored = try XCTUnwrap(controller.documents.first as? TextDocument)
+        XCTAssertEqual(restored.untitledNumber, 2)
+        XCTAssertTrue(restored.isPinned)
+        XCTAssertEqual(restored.tabColor, .green)
+        XCTAssertTrue(restored.isReadOnly)
+        XCTAssertEqual(restored.editor?.isReadOnly, true)
+    }
 }
