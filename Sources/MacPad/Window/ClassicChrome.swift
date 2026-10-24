@@ -42,6 +42,15 @@ enum ClassicWindowFrame {
             existing?.removeFromSuperview()
             ClassicTabStrip.remove(from: host)
         }
+
+        // The other themes get their own tabs instead (see ModernTabStrip).
+        let installer = host.subviews.first { $0 is ModernTabStripInstaller }
+        if classic {
+            installer?.removeFromSuperview()
+            ModernTabStrip.remove(from: host)
+        } else if installer == nil {
+            host.addSubview(ModernTabStripInstaller(window: window))
+        }
     }
 
     /// The system view behind the traffic lights, which spans the title bar.
@@ -248,10 +257,16 @@ final class ClassicTabStrip: NSView {
     private var groupObservations: [NSKeyValueObservation] = []
     private var windowObservations: [NSKeyValueObservation] = []
     private var hoveredClose: Int?
+    private var pressedShortcut: Int?
 
     private static let tabHeight: CGFloat = 21
     private static let maxTabWidth: CGFloat = 200
+    /// Narrower than this, tabs stop shrinking and the rest go to the overflow menu.
+    private static let minTabWidth: CGFloat = 90
     private static let addWidth: CGFloat = 22
+    /// First tab shown when they do not all fit (see TabStripLayout).
+    private var firstVisibleTab = 0
+    private var accessibilityElements: [TabStripElement]?
 
     init(window: NSWindow) {
         observedWindow = window
@@ -301,26 +316,116 @@ final class ClassicTabStrip: NSView {
         guard let sidebar else { return }
         for (index, rect) in switcherRects.enumerated() {
             let tab = Self.switcherTabs[index]
-            let selected = sidebar.tab == tab
-            Chrome.Platinum.dark.setFill()
-            rect.fill()
-            let face = rect.insetBy(dx: 1, dy: 1)
-            (selected ? Chrome.Platinum.boxShade : Chrome.Platinum.frame).setFill()
-            face.fill()
-            (selected ? Chrome.Platinum.dark : .white).setFill()
-            NSRect(x: face.minX, y: face.minY, width: face.width, height: 1).fill()
-            NSRect(x: face.minX, y: face.minY, width: 1, height: face.height).fill()
-            (selected ? Chrome.Platinum.frame : Chrome.Platinum.shadow).setFill()
-            NSRect(x: face.minX, y: face.maxY - 1, width: face.width, height: 1).fill()
-            NSRect(x: face.maxX - 1, y: face.minY, width: 1, height: face.height).fill()
+            drawBevelButton(in: rect, symbol: tab.symbolName, pressed: sidebar.tab == tab)
+        }
+    }
 
-            let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .regular)
-                .applying(.init(paletteColors: [.black]))
-            guard let image = NSImage(systemSymbolName: tab.symbolName, accessibilityDescription: nil)?
-                .withSymbolConfiguration(config) else { continue }
-            let imageRect = NSRect(x: (face.midX - image.size.width / 2).rounded(), y: (face.midY - image.size.height / 2).rounded(),
-                                   width: image.size.width, height: image.size.height)
-            image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+    /// A Platinum bevel button with a black symbol, sunken while pressed or selected.
+    private func drawBevelButton(in rect: NSRect, symbol: String, pressed selected: Bool, enabled: Bool = true) {
+        Chrome.Platinum.dark.setFill()
+        rect.fill()
+        let face = rect.insetBy(dx: 1, dy: 1)
+        (selected ? Chrome.Platinum.boxShade : Chrome.Platinum.frame).setFill()
+        face.fill()
+        (selected ? Chrome.Platinum.dark : .white).setFill()
+        NSRect(x: face.minX, y: face.minY, width: face.width, height: 1).fill()
+        NSRect(x: face.minX, y: face.minY, width: 1, height: face.height).fill()
+        (selected ? Chrome.Platinum.frame : Chrome.Platinum.shadow).setFill()
+        NSRect(x: face.minX, y: face.maxY - 1, width: face.width, height: 1).fill()
+        NSRect(x: face.maxX - 1, y: face.minY, width: 1, height: face.height).fill()
+
+        let config = NSImage.SymbolConfiguration(pointSize: 11, weight: .regular)
+            .applying(.init(paletteColors: [enabled ? .black : Chrome.Platinum.shadow]))
+        guard let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
+            .withSymbolConfiguration(config) else { return }
+        let imageRect = NSRect(x: (face.midX - image.size.width / 2).rounded(), y: (face.midY - image.size.height / 2).rounded(),
+                               width: image.size.width, height: image.size.height)
+        image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+    }
+
+    // MARK: Shortcut buttons
+
+    /// The toolbar's shortcuts, which the Classic theme has no toolbar for:
+    /// bevel buttons at the right end of the tab row.
+    private struct Shortcut {
+        var symbol: String
+        var toolTip: String
+        var action: Selector?
+        var menu: (() -> NSMenu)?
+        var isEnabled = true
+    }
+
+    private var shortcuts: [Shortcut] {
+        let settings = Shortcut(symbol: "gearshape", toolTip: String(localized: "Settings (⌘,)"), action: #selector(AppDelegate.showSettings(_:)))
+        if selected?.windowController is CompareWindowController {
+            return [
+                Shortcut(symbol: "chevron.up", toolTip: String(localized: "Previous Difference (⇧F7)"), action: #selector(CompareViewController.previousDifference(_:))),
+                Shortcut(symbol: "chevron.down", toolTip: String(localized: "Next Difference (F7)"), action: #selector(CompareViewController.nextDifference(_:))),
+                Shortcut(symbol: "arrow.clockwise", toolTip: String(localized: "Compare Again"), action: #selector(CompareViewController.compareAgain(_:))),
+                settings,
+            ]
+        }
+        let document = selected?.windowController?.document as? TextDocument
+        let source = selected
+        return [
+            Shortcut(symbol: "textformat", toolTip: String(localized: "Convert Case To"), menu: { MainMenu.convertCaseMenu() }),
+            Shortcut(symbol: "magnifyingglass", toolTip: String(localized: "Find (⌘F)"), action: #selector(EditorViewController.showFind(_:))),
+            Shortcut(symbol: "rectangle.split.2x1", toolTip: String(localized: "Compare with another open document"),
+                     menu: { CompareMenu(source: source) },
+                     isEnabled: document.map { !CompareMenu.candidates(for: $0).isEmpty } ?? false),
+            Shortcut(symbol: "key", toolTip: String(localized: "Password Generator"), action: #selector(AppDelegate.showPasswordGenerator(_:))),
+            settings,
+        ]
+    }
+
+    private static let shortcutWidth: CGFloat = 28
+    private static let shortcutGap: CGFloat = 4
+
+    private var shortcutRects: [NSRect] {
+        let count = shortcuts.count
+        let size = NSSize(width: Self.shortcutWidth, height: Self.tabHeight - 2)
+        let y = bounds.height - Self.tabHeight
+        let start = bounds.width - 8 - CGFloat(count) * size.width - CGFloat(count - 1) * Self.shortcutGap
+        return (0..<count).map { NSRect(x: start + CGFloat($0) * (size.width + Self.shortcutGap), y: y, width: size.width, height: size.height) }
+    }
+
+    /// Room the shortcut buttons take at the right, including a gap before them.
+    private var shortcutsWidth: CGFloat {
+        guard let first = shortcutRects.first else { return 0 }
+        return bounds.width - first.minX + 8
+    }
+
+    private func drawShortcuts() {
+        for (index, (rect, shortcut)) in zip(shortcutRects, shortcuts).enumerated() {
+            drawBevelButton(in: rect, symbol: shortcut.symbol, pressed: pressedShortcut == index, enabled: shortcut.isEnabled)
+        }
+    }
+
+    /// Tracks a click on a shortcut like a button, then sends its action or opens its menu.
+    private func clickShortcut(_ index: Int) {
+        let shortcut = shortcuts[index]
+        guard shortcut.isEnabled else { return NSSound.beep() }
+        let rect = shortcutRects[index]
+        pressedShortcut = index
+        needsDisplay = true
+        if let menu = shortcut.menu?() {
+            displayIfNeeded()
+            menu.popUp(positioning: nil, at: NSPoint(x: rect.minX, y: rect.maxY + 2), in: self)
+            pressedShortcut = nil
+            needsDisplay = true
+            return
+        }
+        var inside = true
+        while let next = window?.nextEvent(matching: [.leftMouseUp, .leftMouseDragged]) {
+            inside = rect.contains(convert(next.locationInWindow, from: nil))
+            pressedShortcut = inside ? index : nil
+            needsDisplay = true
+            if next.type == .leftMouseUp { break }
+        }
+        pressedShortcut = nil
+        needsDisplay = true
+        if inside, let action = shortcut.action {
+            NSApp.sendAction(action, to: nil, from: self)
         }
     }
 
@@ -329,6 +434,62 @@ final class ClassicTabStrip: NSView {
         for (rect, tab) in zip(switcherRects, Self.switcherTabs) {
             addToolTip(rect, owner: tab.toolTip as NSString, userData: nil)
         }
+        for (rect, shortcut) in zip(shortcutRects, shortcuts) {
+            addToolTip(rect, owner: shortcut.toolTip as NSString, userData: nil)
+        }
+        addToolTip(addRect, owner: String(localized: "New Tab") as NSString, userData: nil)
+        if let overflowRect {
+            addToolTip(overflowRect, owner: String(localized: "All Tabs") as NSString, userData: nil)
+        }
+    }
+
+    // MARK: Accessibility
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .tabGroup }
+    override func accessibilityLabel() -> String? { String(localized: "Tabs") }
+
+    /// The sidebar buttons, every tab (those in the overflow menu sit on its
+    /// box), the overflow and new-tab boxes, then the shortcut buttons.
+    override func accessibilityChildren() -> [Any]? {
+        if let accessibilityElements { return accessibilityElements }
+        let windows = windows
+        let rects = tabRects
+        let selected = selected
+        var elements: [TabStripElement] = zip(switcherRects, Self.switcherTabs).map { rect, tab in
+            TabStripElement(parent: self, frame: rect, label: tab.toolTip, isTab: false) { [weak self] in
+                self?.sidebar?.select(tab)
+                self?.redraw()
+            }
+        }
+        elements += windows.enumerated().map { index, window in
+            TabStripElement(parent: self, frame: rects[index].isEmpty ? (overflowRect ?? .zero) : rects[index],
+                            label: TabStripSupport.label(for: window), isTab: true, isSelected: window === selected,
+                            press: { TabStripSupport.select(window) }, close: { window.performClose(nil) })
+        }
+        if let overflowRect {
+            elements.append(TabStripElement(parent: self, frame: overflowRect, label: String(localized: "All Tabs"), isTab: false) { [weak self] in
+                self?.showOverflowMenu()
+            })
+        }
+        elements.append(TabStripElement(parent: self, frame: addRect, label: String(localized: "New Tab"), isTab: false) {
+            NSDocumentController.shared.newDocument(nil)
+        })
+        elements += zip(shortcutRects, shortcuts).enumerated().map { index, pair in
+            let element = TabStripElement(parent: self, frame: pair.0, label: pair.1.toolTip, isTab: false) { [weak self] in
+                self?.clickShortcut(index)
+            }
+            element.setAccessibilityEnabled(pair.1.isEnabled)
+            return element
+        }
+        accessibilityElements = elements
+        return elements
+    }
+
+    private func showOverflowMenu() {
+        guard let overflowRect else { return }
+        TabStripSupport.overflowMenu(windows: windows, selected: selected)
+            .popUp(positioning: nil, at: NSPoint(x: overflowRect.minX, y: overflowRect.maxY + 2), in: self)
     }
 
     override func layout() {
@@ -382,8 +543,9 @@ final class ClassicTabStrip: NSView {
                 group.observe(\.windows) { [weak self] _, _ in
                     MainActor.assumeIsolated { self?.observeWindows() }
                 },
+                // The shortcut buttons and their tooltips depend on the selected tab.
                 group.observe(\.selectedWindow) { [weak self] _, _ in
-                    MainActor.assumeIsolated { self?.needsDisplay = true }
+                    MainActor.assumeIsolated { self?.redraw() }
                 },
             ]
         }
@@ -419,16 +581,31 @@ final class ClassicTabStrip: NSView {
 
     // MARK: Geometry
 
+    private var tabLayout: TabStripLayout {
+        let windows = windows
+        let available = bounds.width - (sidebarEdge + 8) - 8 - Self.addWidth - 6 - shortcutsWidth
+        return TabStripLayout.make(
+            count: windows.count, selected: selected.flatMap { windows.firstIndex(of: $0) }, available: available,
+            minWidth: Self.minTabWidth, maxWidth: Self.maxTabWidth, overflowWidth: Self.addWidth, first: &firstVisibleTab)
+    }
+
+    /// One rect per tab, in tab order; tabs that do not fit get an empty rect.
     private var tabRects: [NSRect] {
-        let count = windows.count
-        guard count > 0 else { return [] }
+        let layout = tabLayout
         let start = sidebarEdge + 8
-        let available = bounds.width - start - 8 - Self.addWidth - 6
-        let width = min(Self.maxTabWidth, (available / CGFloat(count)).rounded(.down))
-        return (0..<count).map { index in
-            NSRect(x: start + CGFloat(index) * (width - 1), y: bounds.height - Self.tabHeight - 1,
-                   width: width, height: Self.tabHeight)
+        return (0..<layout.count).map { index in
+            guard layout.visible.contains(index) else { return .zero }
+            return NSRect(x: start + CGFloat(index - layout.visible.lowerBound) * (layout.width - 1),
+                          y: bounds.height - Self.tabHeight - 1, width: layout.width, height: Self.tabHeight)
         }
+    }
+
+    private var lastTabMaxX: CGFloat { max(sidebarEdge + 8, tabRects.map(\.maxX).max() ?? 0) }
+
+    /// A Platinum box listing every tab, shown when some do not fit.
+    private var overflowRect: NSRect? {
+        guard tabLayout.overflows else { return nil }
+        return NSRect(x: lastTabMaxX + 6, y: bounds.height - Self.tabHeight + 2, width: Self.addWidth - 6, height: Self.tabHeight - 6)
     }
 
     private func closeRect(in tab: NSRect) -> NSRect {
@@ -436,7 +613,7 @@ final class ClassicTabStrip: NSView {
     }
 
     private var addRect: NSRect {
-        let last = tabRects.last?.maxX ?? sidebarEdge + 8
+        let last = overflowRect?.maxX ?? lastTabMaxX
         return NSRect(x: last + 6, y: bounds.height - Self.tabHeight + 2, width: Self.addWidth - 6, height: Self.tabHeight - 6)
     }
 
@@ -462,12 +639,18 @@ final class ClassicTabStrip: NSView {
         let rects = tabRects
         let selected = selected
         // Unselected tabs first, so the selected one overlaps its neighbours.
-        let order = rects.indices.sorted { (windows[$0] === selected ? 1 : 0) < (windows[$1] === selected ? 1 : 0) }
+        let order = rects.indices.filter { !rects[$0].isEmpty }
+            .sorted { (windows[$0] === selected ? 1 : 0) < (windows[$1] === selected ? 1 : 0) }
         for index in order {
             drawTab(windows[index], in: rects[index], index: index, isSelected: windows[index] === selected)
         }
+        if let overflowRect {
+            drawBevelButton(in: overflowRect, symbol: "chevron.right.2", pressed: false)
+        }
         drawAddBox()
         drawSwitcher()
+        drawShortcuts()
+        accessibilityElements = nil
     }
 
     private func drawTab(_ window: NSWindow, in rect: NSRect, index: Int, isSelected: Bool) {
@@ -553,10 +736,14 @@ final class ClassicTabStrip: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         let point = convert(event.locationInWindow, from: nil)
         let windows = windows
-        guard let index = tabRects.firstIndex(where: { $0.contains(point) }), index < windows.count,
-              let controller = windows[index].windowController as? DocumentWindowController
-        else { return nil }
+        guard let index = tabRects.firstIndex(where: { $0.contains(point) }), index < windows.count else { return nil }
         let menu = NSMenu(title: String(localized: "Tab"))
+        guard let controller = windows[index].windowController as? DocumentWindowController else {
+            // A comparison tab: closing is all there is to do.
+            let close = menu.addItem(withTitle: String(localized: "Close Tab"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "")
+            close.target = windows[index]
+            return menu
+        }
         for item in TabMenu.items(target: controller, keyEquivalents: false) {
             // Close and Move to New Window are the window's own actions.
             if item.action == #selector(NSWindow.performClose(_:)) || item.action == #selector(NSWindow.moveTabToNewWindow(_:)) {
@@ -574,6 +761,14 @@ final class ClassicTabStrip: NSView {
             redraw()
             return
         }
+        if let index = shortcutRects.firstIndex(where: { $0.contains(point) }) {
+            clickShortcut(index)
+            return
+        }
+        if let overflowRect, overflowRect.contains(point) {
+            showOverflowMenu()
+            return
+        }
         if addRect.contains(point) {
             NSDocumentController.shared.newDocument(nil)
             return
@@ -581,7 +776,7 @@ final class ClassicTabStrip: NSView {
         let windows = windows
         guard let index = tabRects.firstIndex(where: { $0.contains(point) }), index < windows.count else {
             // A double click on the free space opens a new tab, like the + box.
-            if event.clickCount == 2, point.x > (tabRects.last?.maxX ?? sidebarEdge) {
+            if event.clickCount == 2, point.x > lastTabMaxX {
                 NSDocumentController.shared.newDocument(nil)
                 return
             }

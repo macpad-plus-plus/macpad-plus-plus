@@ -74,7 +74,120 @@ enum MainMenu {
         menu.addItem(withTitle: String(localized: "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         menu.addItem(withTitle: String(localized: "Delete"), action: #selector(NSText.delete(_:)), keyEquivalent: "")
         menu.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        menu.addItem(.separator())
+        for submenu in [indentMenu(), convertCaseMenu(), lineOperationsMenu(), commentMenu(), blankOperationsMenu()] {
+            menu.addItem(withTitle: submenu.title, action: nil, keyEquivalent: "").submenu = submenu
+        }
         return menu
+    }
+
+    // MARK: Edit submenus, as in Notepad++
+
+    private static func indentMenu() -> NSMenu {
+        let menu = NSMenu(title: String(localized: "Indent"))
+        menu.addItem(withTitle: String(localized: "Increase Line Indent"), action: #selector(EditorViewController.increaseIndent(_:)), keyEquivalent: "]")
+        menu.addItem(withTitle: String(localized: "Decrease Line Indent"), action: #selector(EditorViewController.decreaseIndent(_:)), keyEquivalent: "[")
+        return menu
+    }
+
+    static func convertCaseMenu() -> NSMenu {
+        let menu = NSMenu(title: String(localized: "Convert Case To"))
+        let cases: [(String, TextTransform.Case)] = [
+            (String(localized: "UPPERCASE"), .upper),
+            (String(localized: "lowercase"), .lower),
+            (String(localized: "Proper Case"), .properForce),
+            (String(localized: "Proper Case (Blend)"), .properBlend),
+            (String(localized: "Sentence case"), .sentenceForce),
+            (String(localized: "Sentence case (blend)"), .sentenceBlend),
+            (String(localized: "iNVERT cASE"), .invert),
+            (String(localized: "ranDOm CasE"), .random),
+        ]
+        for (title, textCase) in cases {
+            menu.addItem(withTitle: title, action: #selector(EditorViewController.convertCase(_:)), keyEquivalent: "")
+                .representedObject = textCase.rawValue
+        }
+        return menu
+    }
+
+    private static func lineOperationsMenu() -> NSMenu {
+        let menu = NSMenu(title: String(localized: "Line Operations"))
+        menu.addItem(withTitle: String(localized: "Duplicate Current Line"), action: #selector(EditorViewController.duplicateLines(_:)), keyEquivalent: "D")
+        menu.addItem(withTitle: String(localized: "Remove Duplicate Lines"), action: #selector(EditorViewController.removeDuplicateLines(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Remove Consecutive Duplicate Lines"), action: #selector(EditorViewController.removeConsecutiveDuplicateLines(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Split Lines"), action: #selector(EditorViewController.splitLines(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Join Lines"), action: #selector(EditorViewController.joinLines(_:)), keyEquivalent: "j")
+            .keyEquivalentModifierMask = [.command, .control]
+        menu.addItem(withTitle: String(localized: "Move Up Current Line"), action: #selector(EditorViewController.moveLinesUp(_:)), keyEquivalent: arrow(NSUpArrowFunctionKey))
+            .keyEquivalentModifierMask = [.command, .option]
+        menu.addItem(withTitle: String(localized: "Move Down Current Line"), action: #selector(EditorViewController.moveLinesDown(_:)), keyEquivalent: arrow(NSDownArrowFunctionKey))
+            .keyEquivalentModifierMask = [.command, .option]
+        menu.addItem(withTitle: String(localized: "Remove Empty Lines"), action: #selector(EditorViewController.removeEmptyLines(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Remove Empty Lines (Containing Blank Characters)"), action: #selector(EditorViewController.removeBlankLines(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Insert Blank Line Above Current"), action: #selector(EditorViewController.insertBlankLineAbove(_:)), keyEquivalent: "\r")
+            .keyEquivalentModifierMask = [.command, .shift]
+        menu.addItem(withTitle: String(localized: "Insert Blank Line Below Current"), action: #selector(EditorViewController.insertBlankLineBelow(_:)), keyEquivalent: "\r")
+        menu.addItem(withTitle: String(localized: "Reverse Line Order"), action: #selector(EditorViewController.sortLines(_:)), keyEquivalent: "")
+            .representedObject = TextTransform.Sort.reverse.rawValue
+        menu.addItem(withTitle: String(localized: "Randomize Line Order"), action: #selector(EditorViewController.sortLines(_:)), keyEquivalent: "")
+            .representedObject = TextTransform.Sort.random.rawValue
+        let sorts: [[(String, TextTransform.Sort)]] = [
+            [
+                (String(localized: "Sort Lines Lexicographically Ascending"), .lexicographicAscending),
+                (String(localized: "Sort Lines Lex. Ascending Ignoring Case"), .caseInsensitiveAscending),
+                (String(localized: "Sort Lines in Locale Order Ascending"), .localeAscending),
+                (String(localized: "Sort Lines as Integers Ascending"), .integerAscending),
+                (String(localized: "Sort Lines as Decimals (Comma) Ascending"), .decimalCommaAscending),
+                (String(localized: "Sort Lines as Decimals (Dot) Ascending"), .decimalDotAscending),
+                (String(localized: "Sort Lines by Length Ascending"), .lengthAscending),
+            ],
+            [
+                (String(localized: "Sort Lines Lexicographically Descending"), .lexicographicDescending),
+                (String(localized: "Sort Lines Lex. Descending Ignoring Case"), .caseInsensitiveDescending),
+                (String(localized: "Sort Lines in Locale Order Descending"), .localeDescending),
+                (String(localized: "Sort Lines as Integers Descending"), .integerDescending),
+                (String(localized: "Sort Lines as Decimals (Comma) Descending"), .decimalCommaDescending),
+                (String(localized: "Sort Lines as Decimals (Dot) Descending"), .decimalDotDescending),
+                (String(localized: "Sort Lines by Length Descending"), .lengthDescending),
+            ],
+        ]
+        for group in sorts {
+            menu.addItem(.separator())
+            for (title, sort) in group {
+                menu.addItem(withTitle: title, action: #selector(EditorViewController.sortLines(_:)), keyEquivalent: "")
+                    .representedObject = sort.rawValue
+            }
+        }
+        return menu
+    }
+
+    private static func commentMenu() -> NSMenu {
+        let menu = NSMenu(title: String(localized: "Comment/Uncomment"))
+        menu.addItem(withTitle: String(localized: "Toggle Single Line Comment"), action: #selector(EditorViewController.toggleLineComment(_:)), keyEquivalent: "/")
+        menu.addItem(withTitle: String(localized: "Single Line Comment"), action: #selector(EditorViewController.addLineComment(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Single Line Uncomment"), action: #selector(EditorViewController.removeLineComment(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Block Comment"), action: #selector(EditorViewController.addBlockComment(_:)), keyEquivalent: "/")
+            .keyEquivalentModifierMask = [.command, .option]
+        menu.addItem(withTitle: String(localized: "Block Uncomment"), action: #selector(EditorViewController.removeBlockComment(_:)), keyEquivalent: "")
+        return menu
+    }
+
+    private static func blankOperationsMenu() -> NSMenu {
+        let menu = NSMenu(title: String(localized: "Blank Operations"))
+        menu.addItem(withTitle: String(localized: "Trim Trailing Space"), action: #selector(EditorViewController.trimTrailingSpace(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Trim Leading Space"), action: #selector(EditorViewController.trimLeadingSpace(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Trim Leading and Trailing Space"), action: #selector(EditorViewController.trimLeadingAndTrailingSpace(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "EOL to Space"), action: #selector(EditorViewController.lineEndingsToSpaces(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Trim Both and EOL to Space"), action: #selector(EditorViewController.trimAndJoinLines(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: String(localized: "Tab to Space"), action: #selector(EditorViewController.tabsToSpaces(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Space to Tab (All)"), action: #selector(EditorViewController.spacesToTabs(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: String(localized: "Space to Tab (Leading)"), action: #selector(EditorViewController.leadingSpacesToTabs(_:)), keyEquivalent: "")
+        return menu
+    }
+
+    /// The key-equivalent string for a function key such as an arrow or F7.
+    private static func arrow(_ key: Int) -> String {
+        String(Character(UnicodeScalar(UInt16(key))!))
     }
 
     /// A top-level Search menu, as in Notepad++ and BBEdit.
@@ -112,9 +225,18 @@ enum MainMenu {
         menu.addItem(withTitle: String(localized: "Follow File (tail -f)"), action: #selector(EditorViewController.toggleFollow(_:)), keyEquivalent: "t")
             .keyEquivalentModifierMask = [.command, .option]
         menu.addItem(.separator())
-        menu.addItem(withTitle: String(localized: "Zoom In"), action: #selector(EditorViewController.zoomInText(_:)), keyEquivalent: "+")
-        menu.addItem(withTitle: String(localized: "Zoom Out"), action: #selector(EditorViewController.zoomOutText(_:)), keyEquivalent: "-")
-        menu.addItem(withTitle: String(localized: "Actual Size"), action: #selector(EditorViewController.resetTextZoom(_:)), keyEquivalent: "0")
+        // Comparison tabs (see CompareViewController).
+        menu.addItem(withTitle: String(localized: "Next Difference"), action: #selector(CompareViewController.nextDifference(_:)), keyEquivalent: arrow(NSF7FunctionKey))
+            .keyEquivalentModifierMask = []
+        menu.addItem(withTitle: String(localized: "Previous Difference"), action: #selector(CompareViewController.previousDifference(_:)), keyEquivalent: arrow(NSF7FunctionKey))
+            .keyEquivalentModifierMask = [.shift]
+        menu.addItem(withTitle: String(localized: "Compare Again"), action: #selector(CompareViewController.compareAgain(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        let zoom = NSMenu(title: String(localized: "Zoom"))
+        zoom.addItem(withTitle: String(localized: "Zoom In"), action: #selector(EditorViewController.zoomInText(_:)), keyEquivalent: "+")
+        zoom.addItem(withTitle: String(localized: "Zoom Out"), action: #selector(EditorViewController.zoomOutText(_:)), keyEquivalent: "-")
+        zoom.addItem(withTitle: String(localized: "Actual Size"), action: #selector(EditorViewController.resetTextZoom(_:)), keyEquivalent: "0")
+        menu.addItem(withTitle: zoom.title, action: nil, keyEquivalent: "").submenu = zoom
         menu.addItem(.separator())
         menu.addItem(withTitle: String(localized: "Show Tab Bar"), action: #selector(NSWindow.toggleTabBar(_:)), keyEquivalent: "")
         menu.addItem(withTitle: String(localized: "Show All Tabs"), action: #selector(NSWindow.toggleTabOverview(_:)), keyEquivalent: "\\")

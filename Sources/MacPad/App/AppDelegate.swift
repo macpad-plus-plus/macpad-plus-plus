@@ -42,6 +42,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SettingsWindowController.shared.showWindow(sender)
     }
 
+    @objc func showPasswordGenerator(_ sender: Any?) {
+        PasswordGeneratorPanel.shared.showWindow(sender)
+    }
+
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         NSDocumentController.shared.documents.isEmpty
     }

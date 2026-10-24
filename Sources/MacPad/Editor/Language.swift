@@ -28,6 +28,18 @@ struct Language: Identifiable, Hashable, Sendable {
     var keywords: [Int: String] = [:]
     var styles: [TokenKind: [Int32]] = [:]
     var properties: [String: String] = [:]
+    /// Comment symbols from langs.model.xml, for Comment/Uncomment.
+    var comment = CommentSymbols()
+
+    struct CommentSymbols: Sendable, Equatable {
+        /// Single-line comment, such as "//" or "#"; empty when the language has none.
+        var line = ""
+        /// Block comment delimiters, such as "/*" and "*/"; empty when the language has none.
+        var start = ""
+        var end = ""
+
+        var hasBlock: Bool { !start.isEmpty && !end.isEmpty }
+    }
 
     static func == (lhs: Language, rhs: Language) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -85,6 +97,7 @@ extension Language {
                 .comment: [SCE_MARKDOWN_BLOCKQUOTE, SCE_MARKDOWN_STRIKEOUT],
                 .link: [SCE_MARKDOWN_LINK],
                 .code: [SCE_MARKDOWN_CODE, SCE_MARKDOWN_CODE2, SCE_MARKDOWN_CODEBK],
-            ]),
+            ],
+            comment: CommentSymbols(start: "<!--", end: "-->")),
     ]
 }

@@ -27,6 +27,8 @@ final class ScintillaEditor: ScintillaView {
 
     private(set) var language = Language.normalText
     private var lineNumberDigits = 0
+    private var wheelMonitor: Any?
+    private var wheelZoomDelta: CGFloat = 0
     private var settings = Preferences.editor
 
     override init(frame frameRect: NSRect) {
@@ -268,7 +270,11 @@ final class ScintillaEditor: ScintillaView {
         return value
     }
 
+    /// Off when the margin shows something else, such as the compare view's own line numbers.
+    var usesLineNumberMargin = true
+
     private func updateLineNumberWidth(force: Bool = false) {
+        guard usesLineNumberMargin else { return }
         let digits = max(3, String(send(SCI_GETLINECOUNT)).count)
         guard force || digits != lineNumberDigits else { return }
         lineNumberDigits = digits
@@ -413,6 +419,46 @@ final class ScintillaEditor: ScintillaView {
     func zoomOut() { send(SCI_ZOOMOUT) }
     func resetZoom() { send(SCI_SETZOOM, 0) }
 
+    /// Text size relative to the font size setting: Scintilla's zoom adds
+    /// points to every style, so 13 pt zoomed by +2 is 115%.
+    var zoomPercent: Int {
+        let size = max(settings.fontSize, 1)
+        return Int(((size + Double(send(SCI_GETZOOM))) / size * 100).rounded())
+    }
+
+    /// ⌘ + scroll wheel zooms, like the trackpad pinch Scintilla already handles.
+    /// Scintilla's own support is compiled out, and its scroll view is private,
+    /// so the wheel is caught before it gets there.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let wheelMonitor {
+            NSEvent.removeMonitor(wheelMonitor)
+            self.wheelMonitor = nil
+        }
+        guard window != nil else { return }
+        wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self, event.modifierFlags.contains(.command), event.window === self.window,
+                  self.bounds.contains(self.convert(event.locationInWindow, from: nil))
+            else { return event }
+            self.zoom(byWheel: event)
+            return nil
+        }
+    }
+
+    private func zoom(byWheel event: NSEvent) {
+        // Trackpads send many small precise deltas; a wheel notch is about 1.
+        wheelZoomDelta += event.hasPreciseScrollingDeltas ? event.scrollingDeltaY / 20 : event.scrollingDeltaY
+        while abs(wheelZoomDelta) >= 1 {
+            if wheelZoomDelta > 0 {
+                zoomIn()
+                wheelZoomDelta -= 1
+            } else {
+                zoomOut()
+                wheelZoomDelta += 1
+            }
+        }
+    }
+
     // MARK: Notifications
 
     override func notification(_ notification: UnsafeMutablePointer<SCNotification>!) {
@@ -423,6 +469,9 @@ final class ScintillaEditor: ScintillaView {
             onDirtyChange?(true)
         case SCN_SAVEPOINTREACHED:
             onDirtyChange?(false)
+        case SCN_ZOOM:
+            updateLineNumberWidth(force: true)
+            onStatusChange?()
         case SCN_UPDATEUI:
             // Scrollers appear and disappear as the content grows or shrinks.
             updateScrollerMargin()

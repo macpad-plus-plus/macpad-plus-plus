@@ -58,7 +58,8 @@ enum LanguageCatalog {
                 fileNames: fileNames[entry.name] ?? [],
                 keywords: keywords,
                 styles: styles,
-                properties: properties(language: entry.name, lexer: lexer))
+                properties: properties(language: entry.name, lexer: lexer),
+                comment: entry.comment)
         }
     }
 
@@ -319,6 +320,7 @@ final class LangsParser: NSObject, XMLParserDelegate {
         var name: String
         var extensions: [String]
         var keywords: [String: String] = [:]
+        var comment = Language.CommentSymbols()
     }
 
     private var entries: [Entry] = []
@@ -339,7 +341,11 @@ final class LangsParser: NSObject, XMLParserDelegate {
         case "Language":
             current = Entry(
                 name: attributes["name"] ?? "",
-                extensions: (attributes["ext"] ?? "").lowercased().split(separator: " ").map(String.init))
+                extensions: (attributes["ext"] ?? "").lowercased().split(separator: " ").map(String.init),
+                comment: Language.CommentSymbols(
+                    line: attributes["commentLine"] ?? "",
+                    start: attributes["commentStart"] ?? "",
+                    end: attributes["commentEnd"] ?? ""))
         case "Keywords":
             keywordClass = attributes["name"]
             text = ""

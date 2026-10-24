@@ -108,6 +108,16 @@ extension DocumentWindowController: NSMenuItemValidation {
         NSPasteboard.general.setString(text, forType: .string)
     }
 
+    // MARK: Revert
+
+    /// Throws away the unsaved changes after the system's confirmation.
+    @objc func revertTabToSaved(_ sender: Any?) {
+        guard let window else { return }
+        // The confirmation sheet belongs to this tab, so show it first.
+        window.tabGroup?.selectedWindow = window
+        textDocument?.revertToSaved(sender)
+    }
+
     // MARK: Order
 
     @objc func moveTabToStart(_ sender: Any?) {
@@ -135,6 +145,8 @@ extension DocumentWindowController: NSMenuItemValidation {
         case #selector(toggleReadOnly(_:)):
             menuItem.state = document.isReadOnly ? .on : .off
             return !document.isFollowing
+        case #selector(revertTabToSaved(_:)):
+            return hasFile && document.isDocumentEdited && !document.isFollowing
         case #selector(revealInFinder(_:)), #selector(openInTerminal(_:)),
              #selector(copyFolderPath(_:)), #selector(copyFileName(_:)), #selector(copyFullPath(_:)):
             return hasFile
@@ -190,6 +202,13 @@ enum TabOrder {
         guard let windows = window.tabGroup?.windows, let index = windows.firstIndex(of: window) else { return false }
         let range = bounds(of: window, in: windows)
         return index != (toEnd ? range.upperBound : range.lowerBound)
+    }
+
+    /// Moves a tab to `index`, kept within its kind. Used when dragging a tab.
+    static func move(_ window: NSWindow, to index: Int) {
+        guard let group = window.tabGroup else { return }
+        let range = bounds(of: window, in: group.windows)
+        place(window, at: min(max(index, range.lowerBound), range.upperBound), in: group)
     }
 
     static func move(_ window: NSWindow, toEnd: Bool) {

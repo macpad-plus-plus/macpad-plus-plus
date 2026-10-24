@@ -25,7 +25,9 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
         let toolbar = NSToolbar(identifier: "DocumentToolbar")
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
-        toolbar.allowsUserCustomization = false
+        // Right-click ▸ Customize Toolbar… picks which shortcuts show, as in other Mac apps.
+        toolbar.allowsUserCustomization = true
+        toolbar.autosavesConfiguration = true
         window.toolbar = toolbar
         window.toolbarStyle = .unified
         self.toolbar = toolbar
@@ -98,15 +100,18 @@ final class DocumentWindowController: NSWindowController, NSToolbarDelegate {
     // MARK: Toolbar
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .flexibleSpace, SidebarSwitcher.itemIdentifier, .sidebarTrackingSeparator, .flexibleSpace]
+        [.toggleSidebar, .flexibleSpace, SidebarSwitcher.itemIdentifier, .sidebarTrackingSeparator, .flexibleSpace,
+         ToolbarItems.convertCase, ToolbarItems.find, ToolbarItems.compare, ToolbarItems.passwordGenerator, ToolbarItems.settings]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        toolbarDefaultItemIdentifiers(toolbar)
+        toolbarDefaultItemIdentifiers(toolbar) + [ToolbarItems.toggleComment, ToolbarItems.wordWrap, .space]
     }
 
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        guard itemIdentifier == SidebarSwitcher.itemIdentifier else { return nil }
+        guard itemIdentifier == SidebarSwitcher.itemIdentifier else {
+            return ToolbarItems.make(itemIdentifier, window: window)
+        }
         let item = NSToolbarItem(itemIdentifier: itemIdentifier)
         item.view = SidebarSwitcher()
         item.label = String(localized: "Sidebar")

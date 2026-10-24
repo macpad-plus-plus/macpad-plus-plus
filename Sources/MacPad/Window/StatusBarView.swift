@@ -10,6 +10,8 @@ final class StatusBarView: NSView {
     private let encodingLabel = StatusBarView.makeLabel()
     /// Read-only, or following the file.
     private let modeLabel = StatusBarView.makeLabel()
+    /// Text zoom; clicking it goes back to 100%.
+    private let zoomButton = NSButton(title: "", target: nil, action: #selector(EditorViewController.resetTextZoom(_:)))
     private var labels: [NSTextField] { [positionLabel, lengthLabel, modeLabel, languageLabel, lineEndingLabel, encodingLabel] }
 
     override init(frame frameRect: NSRect) {
@@ -20,7 +22,10 @@ final class StatusBarView: NSView {
 
         let leading = NSStackView(views: [positionLabel, lengthLabel])
         leading.spacing = 16
-        let trailing = NSStackView(views: [modeLabel, languageLabel, lineEndingLabel, encodingLabel])
+        zoomButton.isBordered = false
+        zoomButton.toolTip = String(localized: "Actual Size")
+        zoomButton.setContentHuggingPriority(.required, for: .horizontal)
+        let trailing = NSStackView(views: [modeLabel, zoomButton, languageLabel, lineEndingLabel, encodingLabel])
         trailing.spacing = 16
 
         let row = NSStackView(views: [leading, NSView(), trailing])
@@ -54,6 +59,18 @@ final class StatusBarView: NSView {
             label.font = Chrome.font(ofSize: classic ? 10 : NSFont.smallSystemFontSize)
             label.textColor = classic ? .black : .secondaryLabelColor
         }
+        zoomButton.font = Chrome.font(ofSize: classic ? 10 : NSFont.smallSystemFontSize)
+        updateZoomTitle()
+    }
+
+    private var zoom = 100
+
+    private func updateZoomTitle() {
+        let color: NSColor = Chrome.isClassic ? .black : .secondaryLabelColor
+        zoomButton.attributedTitle = NSAttributedString(string: "\(zoom)%", attributes: [
+            .font: zoomButton.font ?? .systemFont(ofSize: NSFont.smallSystemFontSize),
+            .foregroundColor: color,
+        ])
     }
 
     @available(*, unavailable)
@@ -61,7 +78,11 @@ final class StatusBarView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    func update(caret: ScintillaEditor.CaretInfo, language: Language, format: TextFormat, mode: String? = nil) {
+    func update(caret: ScintillaEditor.CaretInfo, language: Language, format: TextFormat, mode: String? = nil, zoom: Int = 100) {
+        if zoom != self.zoom {
+            self.zoom = zoom
+            updateZoomTitle()
+        }
         modeLabel.stringValue = mode ?? ""
         modeLabel.isHidden = mode == nil
         var position = String(localized: "Ln \(caret.line), Col \(caret.column)")

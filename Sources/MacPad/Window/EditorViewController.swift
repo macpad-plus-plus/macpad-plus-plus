@@ -69,7 +69,8 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
     func refreshStatus() {
         guard let document else { return }
         let mode = followStatusText ?? (document.isReadOnly ? String(localized: "Read-only") : nil)
-        statusBar.update(caret: editor.caretInfo, language: editor.language, format: document.format, mode: mode)
+        statusBar.update(caret: editor.caretInfo, language: editor.language, format: document.format, mode: mode,
+                         zoom: editor.zoomPercent)
     }
 
     // MARK: Language
@@ -339,6 +340,7 @@ final class EditorViewController: NSViewController, NSMenuItemValidation, FindBa
     // MARK: Validation
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if let valid = validateEditAction(menuItem) { return valid }
         switch menuItem.action {
         case #selector(selectLanguage(_:)):
             menuItem.state = (menuItem.representedObject as? String) == editor.language.id ? .on : .off

@@ -34,7 +34,9 @@ final class SettingsWindowController: NSWindowController {
     }
 
     private static func tab(_ title: String, symbol: String, _ view: some View) -> NSTabViewItem {
-        let host = NSHostingController(rootView: AnyView(view.frame(width: 480).fixedSize()))
+        // The window is sized to each form, so the grouped form's own scrolling
+        // (and its bounce) has nothing to do.
+        let host = NSHostingController(rootView: AnyView(view.scrollDisabled(true).frame(width: 480).fixedSize()))
         // The window shows the selected tab's title, as in other macOS settings windows.
         host.title = title
         // The tab controller sizes the window itself (see SettingsTabViewController);
